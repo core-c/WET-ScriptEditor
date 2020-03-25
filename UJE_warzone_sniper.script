@@ -1,0 +1,7761 @@
+// [UJE]C
+// All comments in this script exist for my own convenience..
+
+//--- gokkast
+// globalaccum 1 = tmp register (tbv. if-then-else)
+// globalaccum 2 = gokkast rol vasthouden teller mechanisme
+// globalaccum 3 = kop/munt gokken
+// globalaccum 4 = kop/munt winst-score
+//--- teleports
+// globalaccum 5: bit 0 = paradrop allies is bezet
+//              : bit 1 = paradrop axis is bezet
+//              : bit 2 = axis in rode telefooncel
+//              : bit 3 = allies in rode telefooncel
+//              : bit 4 = axis in blauwe telefooncel
+//              : bit 5 = allies in blauwe telefooncel
+
+game_manager
+{
+	spawn
+	{
+		wait 50
+
+		globalaccum 5 bitreset 0		// paradrop allies vrij
+		globalaccum 5 bitreset 1		// paradrop axis vrij
+		globalaccum 5 bitreset 2		// geen axis in rode telefooncel
+		globalaccum 5 bitreset 3		// geen allies in rode telefooncel
+		globalaccum 5 bitreset 4		// geen axis in blauwe telefooncel
+		globalaccum 5 bitreset 5		// geen allies in blauwe telefooncel
+
+		// tijden
+		wm_axis_respawntime	3
+		wm_allied_respawntime	3
+		wm_set_round_timelimit	30
+
+		// Objectives
+		wm_number_of_objectives 8
+		// 1: snipe
+		// 2: snipe
+		// 3: snipe
+		// 4: snipe
+		// 5: snipe
+		// 6: snipe
+		// 7: snipe
+		// 8: snipe
+
+		// Objective status indicators
+		//wm_objective_status <objective> <team (0=Axis, 1=Allies)> <status (0=neutral 1=complete 2=failed)>
+		wm_objective_status 1 1 0
+		wm_objective_status 1 0 0
+		wm_objective_status 2 1 0
+		wm_objective_status 2 0 0
+		wm_objective_status 3 1 0
+		wm_objective_status 3 0 0
+		wm_objective_status 4 1 0
+		wm_objective_status 4 0 0
+		wm_objective_status 5 1 0
+		wm_objective_status 5 0 0
+		wm_objective_status 6 1 0
+		wm_objective_status 6 0 0
+		wm_objective_status 7 1 0
+		wm_objective_status 7 0 0
+		wm_objective_status 8 1 0
+		wm_objective_status 8 0 0
+
+		// Stopwatch verdedigend team
+		wm_set_defending_team 0
+
+		// Winnaars als de rondetijd om is (0=Axis, 1=Allies, -1=gelijkspel)
+		wm_setwinner 1
+	}
+
+	trigger timelimit_hit
+	{
+		// maak er een gelijkspel van
+		wm_setwinner -1
+
+		// nog een laatste rondje laten vliegen..
+		trigger uje_bommer0 movestart
+
+		wm_endround
+	}
+
+	// uje_bommer0 eerste bombardement
+	trigger bommen0_1e
+	{
+		// de 1e bom
+		alertentity bom0_0
+		wait 200
+		// krater laten zien
+		trigger bom0_krater0 destroy
+		// explosie effecten
+		alertentity bom0_0_effect
+		alertentity bom0_0_explosion
+
+		// beving
+		alertentity bom0_01_rumble
+		wait 800
+
+		// de 2e bom
+		alertentity bom0_1
+		wait 200
+		trigger bom0_krater1 destroy
+		alertentity bom0_1_effect
+		alertentity bom0_1_explosion
+	}
+
+	// uje_bommer0 tweede bombardement
+	trigger bommen0_2e
+	{
+		// de 3e bom
+		alertentity bom0_2
+		wait 200
+		// krater laten zien
+		trigger bom0_krater2 destroy
+		// explosie effecten
+		alertentity bom0_2_effect
+		alertentity bom0_2_explosion
+
+		// beving
+		alertentity bom0_23_rumble
+		wait 800
+
+		// de 4e bom
+		alertentity bom0_3
+		wait 200
+		trigger bom0_krater3 destroy
+		alertentity bom0_3_effect
+		alertentity bom0_3_explosion
+	}
+
+	// uje_bommer1 tapijtje
+	trigger bommen1
+	{
+		wait 3000			// scene timing
+		// de 1e bom
+		alertentity bom1_0
+		wait 750
+		alertentity bom1_1
+		wait 750
+		alertentity bom1_2
+		wait 750
+		alertentity bom1_3
+		wait 750
+		alertentity bom1_4
+		wait 750
+		alertentity bom1_5
+		wait 750
+		alertentity bom1_6
+	}
+}
+
+
+//-------------------------------------------------
+// luchtdoel geschut laten schieten
+//-------------------------------------------------
+// target_script_trigger
+luchtdoel_knaller
+{
+	trigger luchtdoel_schiet0
+	{
+		trigger luchtdoel0_tagger shoot0
+		wait 2000
+		trigger luchtdoel1_tagger shoot0
+		wait 2000
+		trigger luchtdoel2_tagger shoot0
+		wait 2000
+		trigger luchtdoel3_tagger shoot0
+	}
+	trigger luchtdoel_schiet1
+	{
+		trigger luchtdoel0_tagger shoot1
+		wait 2000
+		trigger luchtdoel1_tagger shoot1
+		wait 2000
+		trigger luchtdoel2_tagger shoot1
+		wait 2000
+		trigger luchtdoel3_tagger shoot1
+	}
+	trigger luchtdoel_schiet2
+	{
+		trigger luchtdoel0_tagger shoot2
+		wait 2000
+		trigger luchtdoel1_tagger shoot2
+		wait 2000
+		trigger luchtdoel2_tagger shoot2
+		wait 2000
+		trigger luchtdoel3_tagger shoot2
+	}
+}
+
+
+//-------------------------------------------------
+// bewegend luchtdoel geschut
+//-------------------------------------------------
+// accum 0 = actief (1=ja, 0=nee)
+// script_mover
+luchtdoel0_tagger
+{
+	spawn
+	{
+		wait 50
+		trigger self setactive
+		trigger self linksom
+	}
+	trigger linksom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 0 0 4000
+		faceangles 0 90 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self rechtsom
+	}
+	trigger rechtsom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 0 0 4000
+		faceangles 0 -90 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self linksom
+	}
+
+	trigger setinactive
+	{
+		accum 0 set 0
+	}
+	trigger setactive
+	{
+		accum 0 set 1
+	}
+
+	trigger sound_start
+	{
+		stopsound
+		playsound sound/movers/motors/motor_start_01.wav volume 127
+	}
+	trigger sound_loop
+	{
+		stopsound
+		playsound sound/movers/motors/motor_loop_01.wav looping volume 127
+	}
+	trigger sound_end
+	{
+		stopsound
+		playsound sound/movers/motors/motor_end_01.wav volume 127
+	}
+	trigger sound_shoot
+	{
+		stopsound
+		playsound sound/weapons/artillery/artillery_expl_2.wav volume 512
+	}
+
+	trigger shoot0
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 74 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel0_flash default
+		wait 400
+		setstate luchtdoel0_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal0
+		wait 2500
+
+		trigger self linksom
+	}
+	trigger shoot1
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 16 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel0_flash default
+		wait 400
+		setstate luchtdoel0_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal4
+		wait 2500
+
+		trigger self rechtsom
+	}
+	trigger shoot2
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 -41 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel0_flash default
+		wait 400
+		setstate luchtdoel0_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal8
+		wait 2500
+
+		trigger self rechtsom
+	}
+}
+
+// misc_gamemodel
+luchtdoel0_flash
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel0_tagger tag_flash
+		setstate luchtdoel0_flash invisible
+	}
+}
+
+// script_mover
+luchtdoel0
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel0_tagger tag_origin
+	}
+}
+
+
+luchtdoel1_tagger
+{
+	spawn
+	{
+		wait 50
+		trigger self setactive
+		trigger self rechtsom
+	}
+	trigger linksom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 0 0 4000
+		faceangles 0 90 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self rechtsom
+	}
+	trigger rechtsom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 0 0 4000
+		faceangles 0 -90 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self linksom
+	}
+
+	trigger setinactive
+	{
+		accum 0 set 0
+	}
+	trigger setactive
+	{
+		accum 0 set 1
+	}
+
+	trigger sound_start
+	{
+		stopsound
+		playsound sound/movers/motors/motor_start_01.wav volume 127
+	}
+	trigger sound_loop
+	{
+		stopsound
+		playsound sound/movers/motors/motor_loop_01.wav looping volume 127
+	}
+	trigger sound_end
+	{
+		stopsound
+		playsound sound/movers/motors/motor_end_01.wav volume 127
+	}
+	trigger sound_shoot
+	{
+		stopsound
+		playsound sound/weapons/artillery/artillery_expl_2.wav volume 512
+	}
+
+	trigger shoot0
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 74 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel1_flash default
+		wait 400
+		setstate luchtdoel1_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal1
+		wait 2500
+
+		trigger self linksom
+	}
+	trigger shoot1
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 0 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel1_flash default
+		wait 400
+		setstate luchtdoel1_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal5
+		wait 2500
+
+		trigger self rechtsom
+	}
+	trigger shoot2
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 -35 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel1_flash default
+		wait 400
+		setstate luchtdoel1_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal9
+		wait 2500
+
+		trigger self rechtsom
+	}
+}
+
+luchtdoel1_flash
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel1_tagger tag_flash
+		setstate luchtdoel1_flash invisible
+	}
+}
+
+luchtdoel1
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel1_tagger tag_origin
+	}
+}
+
+
+luchtdoel2_tagger
+{
+	spawn
+	{
+		wait 50
+		faceangles 0 180 0 1
+		trigger self setactive
+		trigger self linksom
+	}
+	trigger linksom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 180 0 4000
+		faceangles 0 270 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self rechtsom
+	}
+	trigger rechtsom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 180 0 4000
+		faceangles 0 90 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self linksom
+	}
+
+	trigger setinactive
+	{
+		accum 0 set 0
+	}
+	trigger setactive
+	{
+		accum 0 set 1
+	}
+
+	trigger sound_start
+	{
+		stopsound
+		playsound sound/movers/motors/motor_start_01.wav volume 127
+	}
+	trigger sound_loop
+	{
+		stopsound
+		playsound sound/movers/motors/motor_loop_01.wav looping volume 127
+	}
+	trigger sound_end
+	{
+		stopsound
+		playsound sound/movers/motors/motor_end_01.wav volume 127
+	}
+	trigger sound_shoot
+	{
+		stopsound
+		playsound sound/weapons/artillery/artillery_expl_2.wav volume 512
+	}
+
+	trigger shoot0
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 132 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel2_flash default
+		wait 400
+		setstate luchtdoel2_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal2
+		wait 2500
+
+		trigger self linksom
+	}
+	trigger shoot1
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 143 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel2_flash default
+		wait 400
+		setstate luchtdoel2_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal6
+		wait 2500
+
+		trigger self rechtsom
+	}
+	trigger shoot2
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 265 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel2_flash default
+		wait 400
+		setstate luchtdoel2_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal10
+		wait 2500
+
+		trigger self rechtsom
+	}
+}
+
+luchtdoel2_flash
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel2_tagger tag_flash
+		setstate luchtdoel2_flash invisible
+	}
+}
+
+luchtdoel2
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel2_tagger tag_origin
+	}
+}
+
+
+luchtdoel3_tagger
+{
+	spawn
+	{
+		wait 50
+		faceangles 0 180 0 1
+		trigger self setactive
+		trigger self rechtsom
+	}
+	trigger linksom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 180 0 4000
+		faceangles 0 270 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self rechtsom
+	}
+	trigger rechtsom
+	{
+		trigger self sound_start
+		wait 700
+		trigger self sound_loop
+		faceangles 0 180 0 4000
+		faceangles 0 90 0 4000
+		trigger self sound_end
+		wait 770
+		trigger self linksom
+	}
+
+	trigger setinactive
+	{
+		accum 0 set 0
+	}
+	trigger setactive
+	{
+		accum 0 set 1
+	}
+
+	trigger sound_start
+	{
+		stopsound
+		playsound sound/movers/motors/motor_start_01.wav volume 127
+	}
+	trigger sound_loop
+	{
+		stopsound
+		playsound sound/movers/motors/motor_loop_01.wav looping volume 127
+	}
+	trigger sound_end
+	{
+		stopsound
+		playsound sound/movers/motors/motor_end_01.wav volume 127
+	}
+	trigger sound_shoot
+	{
+		stopsound
+		playsound sound/weapons/artillery/artillery_expl_2.wav volume 512
+	}
+
+	trigger shoot0
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 160 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel3_flash default
+		wait 400
+		setstate luchtdoel3_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal3
+		wait 2500
+
+		trigger self linksom
+	}
+	trigger shoot1
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 212 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel3_flash default
+		wait 400
+		setstate luchtdoel3_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal7
+		wait 2500
+
+		trigger self rechtsom
+	}
+	trigger shoot2
+	{
+		accum 0 abort_if_equal 0
+		resetscript
+		halt
+		faceangles 0 257 0 500
+
+		trigger self sound_shoot
+		setstate luchtdoel3_flash default
+		wait 400
+		setstate luchtdoel3_flash invisible
+		wait 1000
+		alertentity luchtdoel_knal11
+		wait 2500
+
+		trigger self rechtsom
+	}
+}
+
+luchtdoel3_flash
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel3_tagger tag_flash
+		setstate luchtdoel3_flash invisible
+	}
+}
+
+luchtdoel3
+{
+	spawn
+	{
+		wait 50
+		attachtotag luchtdoel3_tagger tag_origin
+	}
+}
+
+
+
+//-------------------------------------------------
+// slagbomen
+//-------------------------------------------------
+// als de slagboom omhoog is, dan is het luchtdoel-geschut inactief.
+// als de slagboom omlaag is, dan is het luchtdoel-geschut actief.
+
+// func_invisible_user
+slagboom0_trigger
+{
+	spawn
+	{
+		wait 50
+	}
+
+	activate
+	{
+		trigger slagboom0 toggle
+	}
+}
+
+slagboom1_trigger
+{
+	spawn
+	{
+		wait 50
+	}
+
+	activate
+	{
+		trigger slagboom1 toggle
+	}
+}
+
+slagboom2_trigger
+{
+	spawn
+	{
+		wait 50
+	}
+
+	activate
+	{
+		trigger slagboom2 toggle
+	}
+}
+
+slagboom3_trigger
+{
+	spawn
+	{
+		wait 50
+	}
+
+	activate
+	{
+		trigger slagboom3 toggle
+	}
+}
+
+// script_mover
+// accum 0: status (0=opened, 1=closed, 2=moving)
+slagboom0
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_equal 0
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles -90 0 0 1200 deccel
+		accum 0 set 0
+
+		trigger luchtdoel0_tagger setinactive
+	}
+	trigger close
+	{
+		accum 0 abort_if_equal 1
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 0 0 0 1200 deccel
+		accum 0 set 1
+
+		trigger luchtdoel0_tagger setactive
+	}
+
+	trigger toggle
+	{
+		trigger self open
+		trigger self close
+	}
+}
+
+slagboom1
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_equal 0
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles -90 0 0 1200 deccel
+		accum 0 set 0
+
+		trigger luchtdoel1_tagger setinactive
+	}
+	trigger close
+	{
+		accum 0 abort_if_equal 1
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 0 0 0 1200 deccel
+		accum 0 set 1
+
+		trigger luchtdoel1_tagger setactive
+	}
+
+	trigger toggle
+	{
+		trigger self open
+		trigger self close
+	}
+}
+
+slagboom2
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_equal 0
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 90 0 0 1200 deccel
+		accum 0 set 0
+
+		trigger luchtdoel2_tagger setinactive
+	}
+	trigger close
+	{
+		accum 0 abort_if_equal 1
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 0 0 0 1200 deccel
+		accum 0 set 1
+
+		trigger luchtdoel2_tagger setactive
+	}
+
+	trigger toggle
+	{
+		trigger self open
+		trigger self close
+	}
+}
+
+slagboom3
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_equal 0
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 90 0 0 1200 deccel
+		accum 0 set 0
+
+		trigger luchtdoel3_tagger setinactive
+	}
+	trigger close
+	{
+		accum 0 abort_if_equal 1
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 0 0 0 1200 deccel
+		accum 0 set 1
+
+		trigger luchtdoel3_tagger setactive
+	}
+
+	trigger toggle
+	{
+		trigger self open
+		trigger self close
+	}
+}
+
+
+//-------------------------------------------------
+// radar schotels
+//-------------------------------------------------
+// script_mover
+// accum 0 = draai linksom/rechtsom
+radar0
+{
+	spawn
+	{
+		wait 50
+		trigger self draaien
+	}
+	trigger draaien
+	{
+		stoprotation
+		halt
+		accum 0 random 100
+		wait random 4000 10000
+		trigger self linksom
+		trigger self rechtsom
+	}
+	trigger linksom
+	{
+		accum 0 abort_if_less_than 50
+		setrotation 0 10 0
+		wait random 6000 15000
+		trigger self draaien
+	}
+	trigger rechtsom
+	{
+		accum 0 abort_if_greater_than 50
+		setrotation 0 -10 0
+		wait random 6000 15000
+		trigger self draaien
+	}
+}
+
+radar1
+{
+	spawn
+	{
+		wait 50
+		trigger self draaien
+	}
+	trigger draaien
+	{
+		stoprotation
+		halt
+		accum 0 random 100
+		wait random 4000 10000
+		trigger self linksom
+		trigger self rechtsom
+	}
+	trigger linksom
+	{
+		accum 0 abort_if_less_than 50
+		setrotation 0 10 0
+		wait random 6000 15000
+		trigger self draaien
+	}
+	trigger rechtsom
+	{
+		accum 0 abort_if_greater_than 50
+		setrotation 0 -10 0
+		wait random 6000 15000
+		trigger self draaien
+	}
+}
+
+
+//-------------------------------------------------
+// inslagkraters van luchtaanval bommer0
+//-------------------------------------------------
+// func_static
+// accum 0 = zichtbaar?? (0=nee, 1=ja)
+bom0_nokrater0
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self show
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_nokrater0 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_nokrater0 invisible
+	}
+}
+
+bom0_nokrater1
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self show
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_nokrater1 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_nokrater1 invisible
+	}
+}
+
+bom0_nokrater2
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self show
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_nokrater2 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_nokrater2 invisible
+	}
+}
+
+bom0_nokrater3
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self show
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_nokrater3 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_nokrater3 invisible
+	}
+}
+
+
+// accum 0 = zichtbaar?? (0=nee, 1=ja)
+// accum 1 = teller
+bom0_krater0
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self reset
+		trigger self fix
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater0 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater0 invisible
+	}
+
+	trigger reset
+	{
+		accum 1 set 0
+	}
+
+	trigger autorepair
+	{
+		// repareer "automatisch" de krater na 2 minuten
+		accum 1 set 120
+	}
+
+	trigger disable
+	{
+		accum 1 abort_if_equal 0
+		accum 1 inc -1
+		trigger self fix
+	}
+
+	trigger enable
+	{
+		// de krater blijft nog 10 seconden zichtbaar nadat er een speler uit gaat
+		accum 1 set 10
+	}
+
+	trigger destroy
+	{
+		// krater0_0 "maken"
+		trigger self show
+		trigger bom0_nokrater0 hide
+		trigger bom0_krater0_trigger show
+		trigger self autorepair
+	}
+
+	trigger fix
+	{
+		accum 1 abort_if_not_equal 0
+
+		// krater0_0 "dichten"
+		trigger bom0_nokrater0 show
+		trigger bom0_krater0_trigger hide
+		trigger self hide
+	}
+}
+
+bom0_krater1
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self reset
+		trigger self fix
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater1 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater1 invisible
+	}
+
+	trigger reset
+	{
+		accum 1 set 0
+	}
+
+	trigger autorepair
+	{
+		accum 1 set 120
+	}
+
+	trigger disable
+	{
+		accum 1 abort_if_equal 0
+		accum 1 inc -1
+		trigger self fix
+	}
+
+	trigger enable
+	{
+		accum 1 set 10
+	}
+
+	trigger destroy
+	{
+		trigger self show
+		trigger bom0_nokrater1 hide
+		trigger bom0_krater1_trigger show
+		trigger self autorepair
+	}
+
+	trigger fix
+	{
+		accum 1 abort_if_not_equal 0
+		trigger bom0_nokrater1 show
+		trigger bom0_krater1_trigger hide
+		trigger self hide
+	}
+}
+
+bom0_krater2
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self reset
+		trigger self fix
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater2 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater2 invisible
+	}
+
+	trigger reset
+	{
+		accum 1 set 0
+	}
+
+	trigger autorepair
+	{
+		accum 1 set 120
+	}
+
+	trigger disable
+	{
+		accum 1 abort_if_equal 0
+		accum 1 inc -1
+		trigger self fix
+	}
+
+	trigger enable
+	{
+		accum 1 set 10
+	}
+
+	trigger destroy
+	{
+		trigger self show
+		trigger bom0_nokrater2 hide
+		trigger bom0_krater2_trigger show
+		trigger self autorepair
+	}
+
+	trigger fix
+	{
+		accum 1 abort_if_not_equal 0
+		trigger bom0_nokrater2 show
+		trigger bom0_krater2_trigger hide
+		trigger self hide
+	}
+}
+
+bom0_krater3
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self reset
+		trigger self fix
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater3 default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater3 invisible
+	}
+
+	trigger reset
+	{
+		accum 1 set 0
+	}
+
+	trigger autorepair
+	{
+		accum 1 set 120
+	}
+
+	trigger disable
+	{
+		accum 1 abort_if_equal 0
+		accum 1 inc -1
+		trigger self fix
+	}
+
+	trigger enable
+	{
+		accum 1 set 10
+	}
+
+	trigger destroy
+	{
+		trigger self show
+		trigger bom0_nokrater3 hide
+		trigger bom0_krater3_trigger show
+		trigger self autorepair
+	}
+
+	trigger fix
+	{
+		accum 1 abort_if_not_equal 0
+		trigger bom0_nokrater3 show
+		trigger bom0_krater3_trigger hide
+		trigger self hide
+	}
+}
+
+// trigger_multiple
+// accum 0 = zichtbaar?? (0=nee, 1=ja)
+bom0_krater0_trigger
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+//		trigger self hide
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater0_trigger default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater0_trigger invisible
+	}
+}
+
+bom0_krater1_trigger
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+//		trigger self hide
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater1_trigger default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater1_trigger invisible
+	}
+}
+
+bom0_krater2_trigger
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+//		trigger self hide
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater2_trigger default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater2_trigger invisible
+	}
+}
+
+bom0_krater3_trigger
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+//		trigger self hide
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate bom0_krater3_trigger default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate bom0_krater3_trigger invisible
+	}
+}
+
+// target_script_trigger
+bom0_krater0_script
+{
+	spawn
+	{
+		wait 50
+		trigger bom0_krater0 reset
+	}
+
+	trigger disable
+	{
+		trigger bom0_krater0 disable
+	}
+
+	trigger enable
+	{
+		trigger bom0_krater0 enable
+	}
+}
+
+bom0_krater1_script
+{
+	spawn
+	{
+		wait 50
+		trigger bom0_krater1 reset
+	}
+
+	trigger disable
+	{
+		trigger bom0_krater1 disable
+	}
+
+	trigger enable
+	{
+		trigger bom0_krater1 enable
+	}
+}
+
+bom0_krater2_script
+{
+	spawn
+	{
+		wait 50
+		trigger bom0_krater2 reset
+	}
+
+	trigger disable
+	{
+		trigger bom0_krater2 disable
+	}
+
+	trigger enable
+	{
+		trigger bom0_krater2 enable
+	}
+}
+
+bom0_krater3_script
+{
+	spawn
+	{
+		wait 50
+		trigger bom0_krater3 reset
+	}
+
+	trigger disable
+	{
+		trigger bom0_krater3 disable
+	}
+
+	trigger enable
+	{
+		trigger bom0_krater3 enable
+	}
+}
+
+
+
+//-------------------------------------------------
+// bommer 0
+//-------------------------------------------------
+// accum 0 = pad-positie
+uje_bommer0
+{
+	spawn
+	{
+		wait 50
+		setstate uje_bommer0 invisible
+		wait 3000
+		trigger self movestart
+	}
+
+	trigger movestart
+	{
+		accum 0 set -1
+
+		// bommer0 op pad0 plaatsen
+//!!		setstate uje_bommer0 invisible
+//		followspline 0 bommer0_pad0 10000 length -64
+		setposition bommer0_pad0
+		faceangles 0 270 0 1
+		setstate uje_bommer0 default
+
+		// geluid starten van vliegtuig-aanval
+		alertentity aanval
+
+		// kraters "dichten"
+		trigger bom0_krater0 fix
+		trigger bom0_krater1 fix
+		trigger bom0_krater2 fix
+		trigger bom0_krater3 fix
+		trigger self movenext
+	}
+	trigger movenext
+	{
+		accum 0 inc 1
+		trigger self move
+	}
+	trigger move
+	{
+		accum 0 trigger_if_equal 0 uje_bommer0 move_0
+		accum 0 trigger_if_equal 1 uje_bommer0 move_1
+		accum 0 trigger_if_equal 2 uje_bommer0 move_2
+		accum 0 trigger_if_equal 3 uje_bommer0 move_3
+		accum 0 trigger_if_equal 4 uje_bommer0 move_4
+		accum 0 trigger_if_equal 5 uje_bommer0 move_5
+		accum 0 trigger_if_equal 6 uje_bommer0 move_6
+		accum 0 trigger_if_equal 7 uje_bommer0 move_7
+		accum 0 trigger_if_equal 8 uje_bommer0 move_8
+	}
+	trigger move_0
+	{
+//		followspline 0 bommer0_pad0 400 wait roll 0 0
+		gotomarker bommer0_pad1 400 wait
+		trigger self movenext
+	}
+	trigger move_1
+	{
+//		followspline 0 bommer0_pad1 400 wait roll 0 -10 accel
+		gotomarker bommer0_pad2a 400 wait
+
+		// eerste luchtdoel ronde laten schieten
+		alertentity luchtdoel_knaller0
+
+		trigger self movenext
+	}
+	trigger move_2
+	{
+		followspline 0 bommer0_pad2 400 wait roll -10 -5
+
+		// tweede luchtdoel ronde laten schieten
+		alertentity luchtdoel_knaller1
+
+		// een 1e bomberdement uitvoeren
+		trigger game_manager bommen0_1e
+
+		// fighter0 vliegtuig lanceren
+		trigger uje_fighter0 movestart
+		// bommer1 lanceren
+		trigger uje_bommer1 movestart
+
+		trigger self movenext
+	}
+	trigger move_3
+	{
+		followspline 0 bommer0_pad3 400 wait roll -5 0
+		trigger self movenext
+	}
+	trigger move_4
+	{
+		followspline 0 bommer0_pad4 400 wait roll 0 5
+
+		// derde luchtdoel ronde laten schieten
+		alertentity luchtdoel_knaller2
+
+		trigger self movenext
+	}
+	trigger move_5
+	{
+		followspline 0 bommer0_pad5 400 wait roll 5 10
+
+		// een 2e bomberdement uitvoeren
+		trigger game_manager bommen0_2e
+
+		trigger self movenext
+	}
+	trigger move_6
+	{
+		followspline 0 bommer0_pad6 400 wait roll 10 0
+		trigger self movenext
+	}
+	trigger move_7
+	{
+//		followspline 0 bommer0_pad7 400 wait roll 0 0 deccel
+		gotomarker bommer0_pad8 400 wait
+		trigger self movenext
+	}
+	trigger move_8
+	{
+		setstate uje_bommer0 invisible
+
+		wait 360000		// om de 6 minuten een luchtaanval
+
+		trigger self movestart
+	}
+}
+
+
+
+//-------------------------------------------------
+// fighter 0
+//-------------------------------------------------
+// accum 0 = pad-positie
+uje_fighter0
+{
+	spawn
+	{
+		wait 50
+		setstate uje_fighter0 invisible
+//		trigger self movestart
+	}
+
+	trigger movestart
+	{
+		accum 0 set -1
+
+		// bommer0 op pad0 plaatsen
+//!!		setstate uje_fighter0 invisible
+		followspline 0 fighter0_pad0 10000
+		setstate uje_fighter0 default
+
+		trigger self movenext
+	}
+	trigger movenext
+	{
+		accum 0 inc 1
+		trigger self move
+	}
+	trigger move
+	{
+		accum 0 trigger_if_equal 0 uje_fighter0 move_0
+		accum 0 trigger_if_equal 1 uje_fighter0 move_1
+		accum 0 trigger_if_equal 2 uje_fighter0 move_2
+		accum 0 trigger_if_equal 3 uje_fighter0 move_3
+		accum 0 trigger_if_equal 4 uje_fighter0 move_4
+		accum 0 trigger_if_equal 5 uje_fighter0 move_5
+		accum 0 trigger_if_equal 6 uje_fighter0 move_6
+		accum 0 trigger_if_equal 7 uje_fighter0 move_7
+		accum 0 trigger_if_equal 8 uje_fighter0 move_8
+		accum 0 trigger_if_equal 9 uje_fighter0 move_9
+		accum 0 trigger_if_equal 10 uje_fighter0 move_10
+		accum 0 trigger_if_equal 11 uje_fighter0 move_11
+		accum 0 trigger_if_equal 12 uje_fighter0 move_12
+	}
+	trigger move_0
+	{
+		followspline 0 fighter0_pad0 1600 length -128 wait roll 0 0
+		trigger self movenext
+	}
+	trigger move_1
+	{
+		followspline 0 fighter0_pad1 1600 length -128 wait roll 0 -70 accel
+		trigger self movenext
+	}
+	trigger move_2
+	{
+		followspline 0 fighter0_pad2 1600 length -128 wait roll -70 0 deccel
+		trigger self movenext
+	}
+	trigger move_3
+	{
+		followspline 0 fighter0_pad3 1600 length -128 wait roll 0 0 accel
+		trigger self movenext
+	}
+	trigger move_4
+	{
+		followspline 0 fighter0_pad4 1600 length -128 wait roll 0 40 deccel
+		trigger self movenext
+	}
+	trigger move_5
+	{
+		followspline 0 fighter0_pad5 1600 length -128 wait roll 40 30
+		trigger self movenext
+	}
+	trigger move_6
+	{
+		followspline 0 fighter0_pad6 1600 length -128 wait roll 30 10
+		trigger self movenext
+	}
+	trigger move_7
+	{
+		followspline 0 fighter0_pad7 1600 length -128 wait roll 10 40
+		trigger self movenext
+	}
+	trigger move_8
+	{
+		followspline 0 fighter0_pad8 1600 length -128 wait roll 40 0
+		trigger self movenext
+	}
+	trigger move_9
+	{
+		followspline 0 fighter0_pad9 1600 length -128 wait roll 0 -40
+		trigger self movenext
+	}
+	trigger move_10
+	{
+		followspline 0 fighter0_pad10 1600 length -128 wait roll -40 -10
+		trigger self movenext
+	}
+	trigger move_11
+	{
+		followspline 0 fighter0_pad11 1600 length -128 wait roll -10 0
+		trigger self movenext
+	}
+	trigger move_12
+	{
+		setstate uje_fighter0 invisible
+
+//		trigger self movestart
+	}
+}
+
+
+
+//-------------------------------------------------
+// bommer 1
+//-------------------------------------------------
+// accum 0 = pad-positie
+uje_bommer1
+{
+	spawn
+	{
+		wait 50
+		setstate uje_bommer1 invisible
+//		trigger self movestart
+	}
+
+	trigger movestart
+	{
+		accum 0 set -1
+
+		// bommer1 op pad0 plaatsen
+//!!		setstate uje_bommer1 invisible
+//		followspline 0 bommer1_pad0 10000 length -64
+		setposition bommer1_pad0
+		faceangles 0 -30 0 1
+		setstate uje_bommer1 default
+
+		trigger self movenext
+	}
+	trigger movenext
+	{
+		accum 0 inc 1
+		trigger self move
+	}
+	trigger move
+	{
+		accum 0 trigger_if_equal 0 uje_bommer1 move_0
+		accum 0 trigger_if_equal 1 uje_bommer1 move_1
+		accum 0 trigger_if_equal 2 uje_bommer1 move_2
+		accum 0 trigger_if_equal 3 uje_bommer1 move_3
+		accum 0 trigger_if_equal 4 uje_bommer1 move_4
+		accum 0 trigger_if_equal 5 uje_bommer1 move_5
+		accum 0 trigger_if_equal 6 uje_bommer1 move_6
+		accum 0 trigger_if_equal 7 uje_bommer1 move_7
+		accum 0 trigger_if_equal 8 uje_bommer1 move_8
+	}
+	trigger move_0
+	{
+//		followspline 0 bommer1_pad0 800 wait roll 0 0
+//		followpath 0 bommer1_pad0 800 wait
+		gotomarker bommer1_pad0 800 wait
+		trigger self movenext
+	}
+	trigger move_1
+	{
+//		followspline 0 bommer1_pad1 800 wait roll 0 0
+//		followpath 0 bommer1_pad1 800 wait
+		gotomarker bommer1_pad1 800 wait
+		trigger self movenext
+	}
+	trigger move_2
+	{
+//		followspline 0 bommer1_pad2 800 wait roll 0 0
+//		followpath 0 bommer1_pad2 800 wait
+		gotomarker bommer1_pad2 800 wait
+		trigger self movenext
+	}
+	trigger move_3
+	{
+//		followspline 0 bommer1_pad3 800 wait roll 0 0
+//		followpath 0 bommer1_pad3 800 wait
+
+		// tapijtbommen
+		trigger game_manager bommen1
+
+		gotomarker bommer1_pad3 800 wait
+		trigger self movenext
+	}
+	trigger move_4
+	{
+//		followspline 0 bommer1_pad4 800 wait roll 0 0
+//		followpath 0 bommer1_pad4 800 wait
+		gotomarker bommer1_pad4 800 wait
+		trigger self movenext
+	}
+	trigger move_5
+	{
+//		followspline 0 bommer1_pad5 800 wait roll 0 0
+//		followpath 0 bommer1_pad5 800 wait
+		gotomarker bommer1_pad5 800 wait
+		trigger self movenext
+	}
+	trigger move_6
+	{
+		setstate uje_bommer1 invisible
+
+//		trigger self movestart
+	}
+}
+
+
+//=============================================================================
+//=== De Gokkast van C
+//=============================================================================
+
+// tbv. target_script_trigger
+gokkast_lichtjes_script
+{
+	trigger flash
+	{
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_0"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_6"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_0"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_6"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_0"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_1"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_2"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_3"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_4"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_5"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_waster_0" "textures/UJE_warzone_sniper/uje_waster_6"
+		remapshaderflush
+	}
+}
+
+
+//func_invisible_users
+// accum 0 = een rol draait (0=nee, 1=ja)
+// accum 1 = score (niet in gebruik)
+// accum 2 = score (100-tallen)
+// accum 3 = score (10-tallen)
+// accum 4 = score (eenheden)
+// accum 5 = winst score
+// globalaccum 1 = tmp register (tbv. if-then-else)
+// globalaccum 2 = vasthouden rol teller mechanisme
+// globalaccum 3 = kop/munt gokken
+// globalaccum 4 = kop/munt winst-score
+gok_knop
+{
+	spawn
+	{
+		wait 100
+		remapshader "textures/UJE_warzone_sniper/uje_gamble" "textures/UJE_warzone_sniper/uje_gamble_light"
+		remapshaderflush
+
+		trigger self win_off
+
+		// niet bezig met gokken
+		accum 0 set 0
+
+		// begin met 500 punten
+		accum 1 set 500
+		accum 2 set 5
+		accum 3 set 0
+		accum 4 set 0
+		trigger self display_score
+		trigger score_display show_gain_0
+
+		accum 5 set 0
+
+		// vasthouden rollen mag nu
+		globalaccum 2 set 0
+		// niet bezig met gokken kop/munt
+		globalaccum 3 set 0
+		// de huidige kop/munt winst-score
+		globalaccum 4 set 0
+
+		setstate gok_bet invisible
+	}
+	activate
+	{
+		// bezig met gokken?? dan niet triggeren..
+		accum 0 abort_if_not_equal 0
+
+		trigger self start_gokken
+	}
+	trigger start_gokken
+	{
+		// bezig met gokken
+		accum 0 set 1
+
+		// geluidje
+		enablespeaker uje_press_sound
+
+		// 1 punt eraf
+		trigger self score_sub1
+		trigger self display_score
+		trigger score_display show_gain_0
+
+		setstate gok_knop invisible
+		setstate gok_hold_1 invisible
+		setstate gok_hold_2 invisible
+		setstate gok_hold_3 invisible
+		setstate gok_herstel invisible
+
+		remapshader "textures/UJE_warzone_sniper/uje_gamble" "textures/UJE_warzone_sniper/uje_gamble"
+		remapshaderflush
+
+		trigger self win_off
+
+		trigger gok_rol_1 start
+		trigger gok_rol_2 start
+		trigger gok_rol_3 start
+		wait random 900 2300
+		wait 100
+		trigger gok_rol_1 stop
+		wait random 900 1500
+		wait 100
+		trigger gok_rol_2 stop
+		wait random 1300 2000
+		wait 100
+		trigger gok_rol_3 stop
+
+		wait 50	// wacht tot de rol stilstaat
+		trigger gok_rol_1 stershader
+		trigger gok_rol_2 stershader
+		trigger gok_rol_3 stershader
+
+		trigger self check_after_hold
+		trigger self check_hold
+		trigger self check_hold_allowed
+
+		// vasthouden rollen
+		trigger gok_rol_1 hold_off
+		trigger gok_rol_2 hold_off
+		trigger gok_rol_3 hold_off
+
+		remapshader "textures/UJE_warzone_sniper/uje_gamble" "textures/UJE_warzone_sniper/uje_gamble_light"
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel"
+		remapshader "textures/UJE_warzone_sniper/uje_hold1" "textures/UJE_warzone_sniper/uje_hold1"
+		remapshader "textures/UJE_warzone_sniper/uje_hold2" "textures/UJE_warzone_sniper/uje_hold2"
+		remapshader "textures/UJE_warzone_sniper/uje_hold3" "textures/UJE_warzone_sniper/uje_hold3"
+		remapshaderflush
+
+		trigger self check_score_200
+		trigger self check_score_100
+		trigger self check_score_40
+		trigger self check_score_20
+		trigger self check_score_20_star
+		trigger self check_score_16_0
+		trigger self check_score_16_1
+		trigger self check_score_16_2
+		trigger self check_score_16_3
+		trigger self check_score_12_0
+		trigger self check_score_12_1
+		trigger self check_score_12_2
+		trigger self check_score_12_3
+		trigger self check_score_8_0
+		trigger self check_score_8_1
+		trigger self check_score_4
+		trigger self check_score_2
+
+		trigger self continue
+	}
+	trigger continue
+	{
+		setstate gok_knop default
+		// niet bezig met gokken
+		accum 0 set 0
+	}
+
+	// 3x bar7 gescored?
+	trigger check_score_200
+	{
+		trigger gok_rol_1 check_score_200
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_200
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_200
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		// 3 x bar7 score !!!
+		wm_announce "^3Somebody hit the jackpot!"
+		enablespeaker uje_jackpot_sound
+
+		trigger self win_200
+
+		trigger self show_gain_200
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 15000
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 200
+		trigger self score_add100
+		trigger self score_add100
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x 7 gescored?
+	trigger check_score_100
+	{
+		trigger gok_rol_1 check_score_100
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_100
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_100
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_100
+
+		trigger self show_gain_100
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 7750
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 100
+		trigger self score_add100
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Paarse Druiven gescored?
+	trigger check_score_40
+	{
+		trigger gok_rol_1 check_score_40
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_40
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_40
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_40
+
+		trigger self show_gain_40
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 3100
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 40
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Klok gescored?
+	trigger check_score_20
+	{
+		trigger gok_rol_1 check_score_20
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_20
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_20
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_20
+
+		trigger self show_gain_20
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 1550
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 20
+		trigger self score_add10
+		trigger self score_add10
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x ster in beeld?
+	trigger check_score_20_star
+	{
+		trigger gok_rol_1 check_score_20_star
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_20_star
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_20_star
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self show_gain_20
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 1550
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 20
+		trigger self score_add10
+		trigger self score_add10
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Blauw Fruit gescored?
+	trigger check_score_16_0
+	{
+		trigger gok_rol_1 check_score_16_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_0
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_16a
+
+		trigger self show_gain_16
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 1240
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 16
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Peer gescored?
+	trigger check_score_16_1
+	{
+		trigger gok_rol_1 check_score_16_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_1
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_16c
+
+		trigger self show_gain_16
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 1240
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 16
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 2x Blauw Fruit + 1x BAR gescored?
+	trigger check_score_16_2
+	{
+		trigger gok_rol_1 check_score_16_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_2
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_16b
+
+		trigger self show_gain_16
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 1240
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 16
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 2x Peer + 1x BAR gescored?
+	trigger check_score_16_3
+	{
+		trigger gok_rol_1 check_score_16_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_3
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_16d
+
+		trigger self show_gain_16
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 1240
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 16
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Oranje Fruit gescored?
+	trigger check_score_12_0
+	{
+		trigger gok_rol_1 check_score_12_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_0
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_12a
+
+		trigger self show_gain_12
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 930
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 12
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Citroen gescored?
+	trigger check_score_12_1
+	{
+		trigger gok_rol_1 check_score_12_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_1
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_12c
+
+		trigger self show_gain_12
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 930
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 12
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 2x Oranje Fruit + 1x BAR gescored?
+	trigger check_score_12_2
+	{
+		trigger gok_rol_1 check_score_12_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_2
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_12b
+
+		trigger self show_gain_12
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 930
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 12
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 2x Citroen + 1x BAR gescored?
+	trigger check_score_12_3
+	{
+		trigger gok_rol_1 check_score_12_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_3
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_12d
+
+		trigger self show_gain_12
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 930
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 12
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 3x Kers gescored?
+	trigger check_score_8_0
+	{
+		trigger gok_rol_1 check_score_8_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_8_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_8_0
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_8a
+
+		trigger self show_gain_8
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 620
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 8
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 2x Kers + 1x BAR gescored?
+	trigger check_score_8_1
+	{
+		trigger gok_rol_1 check_score_8_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_8_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_8_1
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_8b
+
+		trigger self show_gain_8
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 620
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 8
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 2x Kers gescored?
+	trigger check_score_4
+	{
+		trigger gok_rol_1 check_score_4
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_4
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_4
+
+		trigger self show_gain_4
+		wait 1000
+
+		enablespeaker uje_collect_sound		// geluidje
+		wait 310
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 4
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		trigger self show_gain_0
+
+		trigger self continue
+	}
+	// 1x Kers gescored?
+	// in dit geval mag men kop/munt gokken..
+	trigger check_score_2
+	{
+		trigger gok_rol_1 check_score_2
+		globalaccum 1 abort_if_not_equal 1
+
+		resetscript
+
+		enablespeaker uje_scoring_sound		// geluidje
+
+		trigger self win_04
+
+		trigger self show_gain_2
+		wait 1000
+
+		// gokken: kop/munt
+		globalaccum 3 set 1
+		globalaccum 4 set 2
+		trigger self start_betting
+
+		// zonder kop/munt gokken..
+//		enablespeaker uje_collect_sound		// geluidje
+//		wait 155
+//		disablespeaker uje_collect_sound
+//		//accum 1 inc 2
+//		trigger self score_add1
+//		trigger self score_add1
+//		trigger self display_score
+//		trigger self show_gain_0
+//		trigger self continue
+	}
+
+	trigger start_betting
+	{
+		setstate gok_bet default
+		setstate gok_knop invisible
+		setstate gok_hold_1 invisible
+		setstate gok_hold_2 invisible
+		setstate gok_hold_3 invisible
+		setstate gok_herstel default
+
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel_light"
+		remapshader "textures/UJE_warzone_sniper/uje_gamble" "textures/UJE_warzone_sniper/uje_gamble"
+		remapshaderflush
+
+		enablespeaker uje_bet_sound		// looped
+		trigger self start_bet
+	}
+
+	trigger start_bet
+	{
+		remapshader "textures/UJE_warzone_sniper/uje_bet" "textures/UJE_warzone_sniper/uje_bet_light"
+		remapshaderflush
+		wait 200
+		remapshader "textures/UJE_warzone_sniper/uje_bet" "textures/UJE_warzone_sniper/uje_bet"
+		remapshaderflush
+		wait 200
+		trigger self start_bet
+	}
+	trigger stop_bet
+	{
+		setstate gok_bet invisible
+		setstate gok_herstel invisible
+
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel"
+		remapshader "textures/UJE_warzone_sniper/uje_bet" "textures/UJE_warzone_sniper/uje_bet"
+		remapshader "textures/UJE_warzone_sniper/uje_gamble" "textures/UJE_warzone_sniper/uje_gamble_light"
+		remapshaderflush
+
+		disablespeaker uje_bet_sound		// looped
+
+		trigger self collect_score
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+		trigger self continue
+	}
+
+	trigger bet
+	{
+		resetscript
+
+		stopsound
+		disablespeaker uje_bet_sound		// looped
+
+		accum 5 random 100
+		globalaccum 1 set 0
+		trigger self check_bet
+		globalaccum 1 abort_if_equal 1
+		// winst-score verloren..
+
+		// geluidje punten verloren
+		enablespeaker uje_betlost_sound
+		wait 1190
+		disablespeaker uje_betlost_sound
+
+		globalaccum 4 set 0
+
+		trigger self stop_bet
+	}
+	trigger check_bet
+	{
+		accum 5 abort_if_less_than 50
+		globalaccum 1 set 1
+		// winst verdubbeld..
+		resetscript
+
+		enablespeaker uje_doubled_sound
+		wait 370
+		disablespeaker uje_doubled_sound
+
+		trigger self double_bet
+		globalaccum 3 abort_if_equal 0
+		trigger self start_betting
+	}
+
+
+	trigger double_bet
+	{
+		globalaccum 3 abort_if_equal 0
+		globalaccum 4 abort_if_equal 0
+
+		globalaccum 4 trigger_if_equal 2 gok_knop bet_raiseto_4
+		globalaccum 4 trigger_if_equal 4 gok_knop bet_raiseto_8
+		globalaccum 4 trigger_if_equal 8 gok_knop bet_raiseto_16
+		globalaccum 4 trigger_if_equal 16 gok_knop bet_raiseto_32
+		globalaccum 4 trigger_if_equal 32 gok_knop bet_raiseto_64
+		globalaccum 4 trigger_if_equal 64 gok_knop bet_raiseto_128
+		globalaccum 4 trigger_if_equal 128 gok_knop bet_raiseto_200
+
+		//trigger self continue
+		trigger self start_betting
+	}
+	trigger bet_raiseto_4
+	{
+		globalaccum 4 set 4
+		trigger self show_gain_4
+
+		resetscript
+		trigger self start_betting
+	}
+	trigger bet_raiseto_8
+	{
+		globalaccum 4 set 8
+		trigger self show_gain_8
+
+		resetscript
+		trigger self start_betting
+	}
+	trigger bet_raiseto_16
+	{
+		globalaccum 4 set 16
+		trigger self show_gain_16
+
+		resetscript
+		trigger self start_betting
+	}
+	trigger bet_raiseto_32
+	{
+		globalaccum 4 set 32
+		trigger self show_gain_32
+
+		resetscript
+		trigger self start_betting
+	}
+	trigger bet_raiseto_64
+	{
+		globalaccum 4 set 64
+		trigger self show_gain_64
+
+		resetscript
+		trigger self start_betting
+	}
+	trigger bet_raiseto_128
+	{
+		globalaccum 4 set 128
+		trigger self show_gain_128
+
+		resetscript
+		trigger self start_betting
+	}
+	trigger bet_raiseto_200
+	{
+		resetscript
+		globalaccum 4 set 200
+		trigger self show_gain_200
+		trigger self stop_bet
+	}
+
+	trigger collect_score
+	{
+		trigger self show_gain_0
+
+		globalaccum 3 abort_if_equal 0		// bezig met kop/munt gokken?
+		globalaccum 4 abort_if_equal 0		// geen winst-score?
+		globalaccum 4 trigger_if_equal 2 gok_knop collect_score_2
+		globalaccum 4 trigger_if_equal 4 gok_knop collect_score_4
+		globalaccum 4 trigger_if_equal 8 gok_knop collect_score_8
+		globalaccum 4 trigger_if_equal 16 gok_knop collect_score_16
+		globalaccum 4 trigger_if_equal 32 gok_knop collect_score_32
+		globalaccum 4 trigger_if_equal 64 gok_knop collect_score_64
+		globalaccum 4 trigger_if_equal 128 gok_knop collect_score_128
+		globalaccum 4 trigger_if_equal 200 gok_knop collect_score_200
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+		trigger self continue
+	}
+	trigger collect_score_2
+	{
+		enablespeaker uje_collect_sound
+		wait 155
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 2
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_4
+	{
+		enablespeaker uje_collect_sound
+		wait 310
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 4
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_8
+	{
+		enablespeaker uje_collect_sound
+		wait 620
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 8
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_16
+	{
+		enablespeaker uje_collect_sound
+		wait 1240
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 16
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_32
+	{
+		enablespeaker uje_collect_sound
+		wait 2480
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 32
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_64
+	{
+		enablespeaker uje_collect_sound
+		wait 4960
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 64
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_128
+	{
+		enablespeaker uje_collect_sound
+		wait 9920
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 128
+		trigger self score_add100
+		trigger self score_add10
+		trigger self score_add10
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self score_add1
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+	trigger collect_score_200
+	{
+		enablespeaker uje_collect_sound
+		wait 15000
+		disablespeaker uje_collect_sound
+
+		//accum 1 inc 200
+		trigger self score_add100
+		trigger self score_add100
+		trigger self display_score
+
+		//trigger self show_gain_0
+
+		globalaccum 3 set 0
+		globalaccum 4 set 0
+
+		trigger self continue
+	}
+
+	// score optellen
+	trigger score_add100
+	{
+		accum 1 inc 100				// de totale score
+		// 100-tallen
+		accum 2 inc 1
+		accum 2 abort_if_not_equal 10		// overlopen?
+		accum 2 set 0
+	}
+	trigger score_add10
+	{
+		accum 1 inc 10
+		accum 3 inc 1
+		accum 3 abort_if_not_equal 10
+		accum 3 set 0
+		accum 2 inc 1
+		accum 2 abort_if_not_equal 10
+		accum 2 set 0
+	}
+	trigger score_add1
+	{
+		accum 1 inc 1
+		accum 4 inc 1
+		accum 4 abort_if_not_equal 10
+		accum 4 set 0
+		accum 3 inc 1
+		accum 3 abort_if_not_equal 10
+		accum 3 set 0
+		accum 2 inc 1
+		accum 2 abort_if_not_equal 10
+		accum 2 set 0
+	}
+	trigger score_sub1
+	{
+		accum 1 inc -1
+		accum 4 inc -1
+		accum 4 abort_if_not_equal -1
+		accum 4 set 9
+		accum 3 inc -1
+		accum 3 abort_if_not_equal -1
+		accum 3 set 9
+		accum 2 inc -1
+		accum 2 abort_if_not_equal -1
+		accum 2 set 9	// debug
+		accum 3 set 9	// debug
+		accum 4 set 9	// debug
+	}
+
+	// score afbeelden
+	trigger display_score
+	{
+		// 100-tallen
+		accum 2 trigger_if_equal 0 score_display show100_0
+		accum 2 trigger_if_equal 1 score_display show100_1
+		accum 2 trigger_if_equal 2 score_display show100_2
+		accum 2 trigger_if_equal 3 score_display show100_3
+		accum 2 trigger_if_equal 4 score_display show100_4
+		accum 2 trigger_if_equal 5 score_display show100_5
+		accum 2 trigger_if_equal 6 score_display show100_6
+		accum 2 trigger_if_equal 7 score_display show100_7
+		accum 2 trigger_if_equal 8 score_display show100_8
+		accum 2 trigger_if_equal 9 score_display show100_9
+		// 10-tallen
+		accum 3 trigger_if_equal 0 score_display show10_0
+		accum 3 trigger_if_equal 1 score_display show10_1
+		accum 3 trigger_if_equal 2 score_display show10_2
+		accum 3 trigger_if_equal 3 score_display show10_3
+		accum 3 trigger_if_equal 4 score_display show10_4
+		accum 3 trigger_if_equal 5 score_display show10_5
+		accum 3 trigger_if_equal 6 score_display show10_6
+		accum 3 trigger_if_equal 7 score_display show10_7
+		accum 3 trigger_if_equal 8 score_display show10_8
+		accum 3 trigger_if_equal 9 score_display show10_9
+		// eenheden
+		accum 4 trigger_if_equal 0 score_display show1_0
+		accum 4 trigger_if_equal 1 score_display show1_1
+		accum 4 trigger_if_equal 2 score_display show1_2
+		accum 4 trigger_if_equal 3 score_display show1_3
+		accum 4 trigger_if_equal 4 score_display show1_4
+		accum 4 trigger_if_equal 5 score_display show1_5
+		accum 4 trigger_if_equal 6 score_display show1_6
+		accum 4 trigger_if_equal 7 score_display show1_7
+		accum 4 trigger_if_equal 8 score_display show1_8
+		accum 4 trigger_if_equal 9 score_display show1_9
+	}
+
+	// winst punten
+	trigger show_gain_0
+	{
+		trigger score_display show_gain_0
+	}
+	trigger show_gain_2
+	{
+		trigger score_display show_gain_2
+	}
+	trigger show_gain_4
+	{
+		trigger score_display show_gain_4
+	}
+	trigger show_gain_8
+	{
+		trigger score_display show_gain_8
+	}
+	trigger show_gain_12
+	{
+		trigger score_display show_gain_12
+	}
+	trigger show_gain_16
+	{
+		trigger score_display show_gain_16
+	}
+	trigger show_gain_20
+	{
+		trigger score_display show_gain_20
+	}
+	trigger show_gain_32
+	{
+		trigger score_display show_gain_32
+	}
+	trigger show_gain_40
+	{
+		trigger score_display show_gain_40
+	}
+	trigger show_gain_64
+	{
+		trigger score_display show_gain_64
+	}
+	trigger show_gain_100
+	{
+		trigger score_display show_gain_100
+	}
+	trigger show_gain_128
+	{
+		trigger score_display show_gain_128
+	}
+	trigger show_gain_200
+	{
+		trigger score_display show_gain_200
+	}
+
+	// rollen vastzetten
+	trigger check_hold
+	{
+		globalaccum 2 abort_if_not_equal 1
+		globalaccum 2 set 2
+		trigger gok_hold_1 hold_not_allowed
+		trigger gok_hold_2 hold_not_allowed
+		trigger gok_hold_3 hold_not_allowed
+	}
+	trigger check_after_hold
+	{
+		globalaccum 2 abort_if_not_equal 2
+		globalaccum 2 set 0
+		trigger gok_hold_1 hold_not_allowed
+		trigger gok_hold_2 hold_not_allowed
+		trigger gok_hold_3 hold_not_allowed
+	}
+	trigger check_hold_allowed
+	{
+		globalaccum 2 abort_if_not_equal 0
+		trigger gok_hold_1 hold_allowed
+		trigger gok_hold_2 hold_allowed
+		trigger gok_hold_3 hold_allowed
+
+		setstate gok_hold_1 default
+		setstate gok_hold_2 default
+		setstate gok_hold_3 default
+	}
+
+	trigger win_off
+	{
+		setstate win_0 default
+		setstate win_0_200 invisible
+		setstate win_0_100 invisible
+		setstate win_0_40 invisible
+		setstate win_0_20 invisible
+		setstate win_2 default
+		setstate win_2_16a invisible
+		setstate win_2_16b invisible
+		setstate win_2_16c invisible
+		setstate win_2_16d invisible
+		setstate win_1 default
+		setstate win_1_12a invisible
+		setstate win_1_12b invisible
+		setstate win_1_12c invisible
+		setstate win_1_12d invisible
+		setstate win_3 default
+		setstate win_3_8a invisible
+		setstate win_3_8b invisible
+		setstate win_3_4 invisible
+		setstate win_3_04 invisible
+	}
+	trigger win_200
+	{
+		setstate win_0 invisible
+		setstate win_0_200 default
+		setstate win_0_100 invisible
+		setstate win_0_40 invisible
+		setstate win_0_20 invisible
+	}
+	trigger win_100
+	{
+		setstate win_0 invisible
+		setstate win_0_200 invisible
+		setstate win_0_100 default
+		setstate win_0_40 invisible
+		setstate win_0_20 invisible
+	}
+	trigger win_40
+	{
+		setstate win_0 invisible
+		setstate win_0_200 invisible
+		setstate win_0_100 invisible
+		setstate win_0_40 default
+		setstate win_0_20 invisible
+	}
+	trigger win_20
+	{
+		setstate win_0 invisible
+		setstate win_0_200 invisible
+		setstate win_0_100 invisible
+		setstate win_0_40 invisible
+		setstate win_0_20 default
+	}
+	trigger win_16a
+	{
+		setstate win_2 invisible
+		setstate win_2_16a default
+		setstate win_2_16b invisible
+		setstate win_2_16c invisible
+		setstate win_2_16d invisible
+	}
+	trigger win_16b
+	{
+		setstate win_2 invisible
+		setstate win_2_16a invisible
+		setstate win_2_16b default
+		setstate win_2_16c invisible
+		setstate win_2_16d invisible
+	}
+	trigger win_16c
+	{
+		setstate win_2 invisible
+		setstate win_2_16a invisible
+		setstate win_2_16b invisible
+		setstate win_2_16c default
+		setstate win_2_16d invisible
+	}
+	trigger win_16d
+	{
+		setstate win_2 invisible
+		setstate win_2_16a invisible
+		setstate win_2_16b invisible
+		setstate win_2_16c invisible
+		setstate win_2_16d default
+	}
+	trigger win_12a
+	{
+		setstate win_1 invisible
+		setstate win_1_12a default
+		setstate win_1_12b invisible
+		setstate win_1_12c invisible
+		setstate win_1_12d invisible
+	}
+	trigger win_12b
+	{
+		setstate win_1 invisible
+		setstate win_1_12a invisible
+		setstate win_1_12b default
+		setstate win_1_12c invisible
+		setstate win_1_12d invisible
+	}
+	trigger win_12c
+	{
+		setstate win_1 invisible
+		setstate win_1_12a invisible
+		setstate win_1_12b invisible
+		setstate win_1_12c default
+		setstate win_1_12d invisible
+	}
+	trigger win_12d
+	{
+		setstate win_1 invisible
+		setstate win_1_12a invisible
+		setstate win_1_12b invisible
+		setstate win_1_12c invisible
+		setstate win_1_12d default
+	}
+	trigger win_8a
+	{
+		setstate win_3 invisible
+		setstate win_3_8a default
+		setstate win_3_8b invisible
+		setstate win_3_4 invisible
+		setstate win_3_04 invisible
+	}
+	trigger win_8b
+	{
+		setstate win_3 invisible
+		setstate win_3_8a invisible
+		setstate win_3_8b default
+		setstate win_3_4 invisible
+		setstate win_3_04 invisible
+	}
+	trigger win_4
+	{
+		setstate win_3 invisible
+		setstate win_3_8a invisible
+		setstate win_3_8b invisible
+		setstate win_3_4 default
+		setstate win_3_04 invisible
+	}
+	trigger win_04
+	{
+		setstate win_3 invisible
+		setstate win_3_8a invisible
+		setstate win_3_8b invisible
+		setstate win_3_4 invisible
+		setstate win_3_04 default
+	}
+}
+
+// vasthouden-knop
+// accum 0 = vasthouden mogelijk? (0=nee, 1=ja)
+gok_hold_1
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 1
+	}
+	activate
+	{
+		globalaccum 2 abort_if_greater_than 1
+		globalaccum 2 set 1
+
+		accum 0 abort_if_equal 0
+		trigger gok_rol_1 hold_on
+
+		enablespeaker uje_hold_sound		// geluidje
+
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel_light"
+		remapshader "textures/UJE_warzone_sniper/uje_hold1" "textures/UJE_warzone_sniper/uje_hold1_light"
+		remapshaderflush
+
+		setstate gok_hold_1 invisible
+		setstate gok_herstel default
+	}
+	trigger hold_allowed
+	{
+		accum 0 set 1
+	}
+	trigger hold_not_allowed
+	{
+		accum 0 set 0
+	}
+}
+gok_hold_2
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 1
+	}
+	activate
+	{
+		globalaccum 2 abort_if_greater_than 1
+		globalaccum 2 set 1
+
+		accum 0 abort_if_equal 0
+		trigger gok_rol_2 hold_on
+
+		enablespeaker uje_hold_sound		// geluidje
+
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel_light"
+		remapshader "textures/UJE_warzone_sniper/uje_hold2" "textures/UJE_warzone_sniper/uje_hold2_light"
+		remapshaderflush
+
+		setstate gok_hold_2 invisible
+		setstate gok_herstel default
+	}
+	trigger hold_allowed
+	{
+		accum 0 set 1
+	}
+	trigger hold_not_allowed
+	{
+		accum 0 set 0
+	}
+}
+gok_hold_3
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 1
+	}
+	activate
+	{
+		globalaccum 2 abort_if_greater_than 1
+		globalaccum 2 set 1
+
+		accum 0 abort_if_equal 0
+		trigger gok_rol_3 hold_on
+
+		enablespeaker uje_hold_sound		// geluidje
+
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel_light"
+		remapshader "textures/UJE_warzone_sniper/uje_hold3" "textures/UJE_warzone_sniper/uje_hold3_light"
+		remapshaderflush
+
+		setstate gok_hold_3 invisible
+		setstate gok_herstel default
+	}
+	trigger hold_allowed
+	{
+		accum 0 set 1
+	}
+	trigger hold_not_allowed
+	{
+		accum 0 set 0
+	}
+}
+gok_herstel
+{
+	spawn
+	{
+		wait 100
+	}
+	activate
+	{
+		trigger self collect_bet
+
+		globalaccum 2 abort_if_not_equal 1
+		globalaccum 2 set 0
+
+		trigger gok_rol_1 hold_off
+		trigger gok_rol_2 hold_off
+		trigger gok_rol_3 hold_off
+
+		enablespeaker uje_press_sound		// geluidje
+
+		remapshader "textures/UJE_warzone_sniper/uje_cancel" "textures/UJE_warzone_sniper/uje_cancel"
+		remapshader "textures/UJE_warzone_sniper/uje_hold1" "textures/UJE_warzone_sniper/uje_hold1"
+		remapshader "textures/UJE_warzone_sniper/uje_hold2" "textures/UJE_warzone_sniper/uje_hold2"
+		remapshader "textures/UJE_warzone_sniper/uje_hold3" "textures/UJE_warzone_sniper/uje_hold3"
+		remapshaderflush
+
+		setstate gok_hold_1 default
+		setstate gok_hold_2 default
+		setstate gok_hold_3 default
+		setstate gok_herstel invisible
+	}
+
+	trigger collect_bet
+	{
+		globalaccum 3 abort_if_equal 0
+		globalaccum 4 abort_if_equal 0
+
+		resetscript
+
+		trigger gok_knop stop_bet
+	}
+}
+gok_bet
+{
+	spawn
+	{
+		wait 50
+	}
+	activate
+	{
+		globalaccum 3 abort_if_equal 0
+		trigger gok_knop bet
+	}
+}
+
+//script_movers
+// accum 0 = stop draaien van rol? (0=nee, 1=ja)
+// accum 1 = waarde van het symbool in beeld (voor deze rol)
+// accum 2 = rol vast dmv hold-knop?? (0=nee, 1=ja)
+// accum 3 = ster in beeld? (0=nee, 1=boven, 2=midden, 3=onder) (hoeft niet persé op de winlijn te zijn)
+gok_rol_1
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		accum 1 set 11
+		accum 2 set 0
+		accum 3 set 0
+	}
+
+	trigger start
+	{
+		// rol vast? dan klaar..
+		accum 2 abort_if_equal 1
+
+		remapshader "textures/UJE_warzone_sniper/uje_domster_1" "textures/UJE_warzone_sniper/uje_domster_1"
+		remapshaderflush
+
+		accum 0 set 0
+		trigger self run0
+	}
+
+
+	trigger stop
+	{
+		accum 0 set 1
+
+		accum 2 abort_if_equal 1		// rol draait niet
+		enablespeaker uje_roll_sound		// geluidje
+	}
+
+	// BAR7
+	trigger check_score_200
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 6
+		globalaccum 1 set 1
+	}
+	// 7
+	trigger check_score_100
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 7
+		globalaccum 1 set 1
+	}
+	// paarse druiven
+	trigger check_score_40
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 9
+		globalaccum 1 set 1
+	}
+	// klok
+	trigger check_score_20
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 2
+		globalaccum 1 set 1
+	}
+	trigger check_score_20_star
+	{
+		globalaccum 1 set 0
+		accum 3 abort_if_equal 0
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_3
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_3
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_4
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+
+	trigger hold_on
+	{
+		accum 2 set 1
+	}
+	trigger hold_off
+	{
+		accum 2 set 0
+	}
+
+	trigger run0
+	{
+		accum 0 abort_if_equal 1
+		faceangles -15 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run1
+	}
+	trigger run1
+	{
+		accum 0 abort_if_equal 1
+		faceangles -30 0 0 20
+		accum 1 set 9
+		accum 3 set 0
+		trigger self run2
+	}
+	trigger run2
+	{
+		accum 0 abort_if_equal 1
+		faceangles -45 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run3
+	}
+	trigger run3
+	{
+		accum 0 abort_if_equal 1
+		faceangles -60 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run4
+	}
+	trigger run4
+	{
+		accum 0 abort_if_equal 1
+		faceangles -75 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run5
+	}
+	trigger run5
+	{
+		accum 0 abort_if_equal 1
+		faceangles -90 0 0 20
+		accum 1 set 9
+		accum 3 set 0
+		trigger self run6
+	}
+	trigger run6
+	{
+		accum 0 abort_if_equal 1
+		faceangles -105 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run7
+	}
+	trigger run7
+	{
+		accum 0 abort_if_equal 1
+		faceangles -120 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run8
+	}
+	trigger run8
+	{
+		accum 0 abort_if_equal 1
+		faceangles -135 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run9
+	}
+	trigger run9
+	{
+		accum 0 abort_if_equal 1
+		faceangles -150 0 0 20
+		accum 1 set 9
+		accum 3 set 0
+		trigger self run10
+	}
+	trigger run10
+	{
+		accum 0 abort_if_equal 1
+		faceangles -165 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run11
+	}
+	trigger run11
+	{
+		accum 0 abort_if_equal 1
+		faceangles -180 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run12
+	}
+	trigger run12
+	{
+		accum 0 abort_if_equal 1
+		faceangles -195 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run13
+	}
+	trigger run13
+	{
+		accum 0 abort_if_equal 1
+		faceangles -210 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run14
+	}
+	trigger run14
+	{
+		accum 0 abort_if_equal 1
+		faceangles -225 0 0 20
+		accum 1 set 7
+		accum 3 set 1
+		trigger self run15
+	}
+	trigger run15
+	{
+		accum 0 abort_if_equal 1
+		faceangles -240 0 0 20
+		accum 1 set 5
+		accum 3 set 2
+		trigger self run16
+	}
+	trigger run16
+	{
+		accum 0 abort_if_equal 1
+		faceangles -255 0 0 20
+		accum 1 set 1
+		accum 3 set 3
+		trigger self run17
+	}
+	trigger run17
+	{
+		accum 0 abort_if_equal 1
+		faceangles -270 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run18
+	}
+	trigger run18
+	{
+		accum 0 abort_if_equal 1
+		faceangles -285 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run19
+	}
+	trigger run19
+	{
+		accum 0 abort_if_equal 1
+		faceangles -300 0 0 20
+		accum 1 set 7
+		accum 3 set 0
+		trigger self run20
+	}
+	trigger run20
+	{
+		accum 0 abort_if_equal 1
+		faceangles -315 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run21
+	}
+	trigger run21
+	{
+		accum 0 abort_if_equal 1
+		faceangles -330 0 0 20
+		accum 1 set 6
+		accum 3 set 0
+		trigger self run22
+	}
+	trigger run22
+	{
+		accum 0 abort_if_equal 1
+		faceangles -345 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run23
+	}
+	trigger run23
+	{
+		accum 0 abort_if_equal 1
+		faceangles -360 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run0
+	}
+
+	trigger stershader
+	{
+		accum 3 abort_if_equal 0
+		trigger self stershader1
+		trigger self stershader2
+		trigger self stershader3
+	}
+	trigger stershader1
+	{
+		accum 3 abort_if_not_equal 1
+		remapshader "textures/UJE_warzone_sniper/uje_domster_1" "textures/UJE_warzone_sniper/uje_domster_1_0"
+		remapshaderflush
+	}
+	trigger stershader2
+	{
+		accum 3 abort_if_not_equal 2
+		remapshader "textures/UJE_warzone_sniper/uje_domster_1" "textures/UJE_warzone_sniper/uje_domster_1_1"
+		remapshaderflush
+	}
+	trigger stershader3
+	{
+		accum 3 abort_if_not_equal 3
+		remapshader "textures/UJE_warzone_sniper/uje_domster_1" "textures/UJE_warzone_sniper/uje_domster_1_2"
+		remapshaderflush
+	}
+}
+gok_rol_2
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		accum 1 set 2
+		accum 2 set 0
+		accum 3 set 0
+	}
+
+	trigger start
+	{
+		// rol vast? dan klaar..
+		accum 2 abort_if_equal 1
+
+		remapshader "textures/UJE_warzone_sniper/uje_domster_2" "textures/UJE_warzone_sniper/uje_domster_2"
+		remapshaderflush
+
+		accum 0 set 0
+		trigger self run0
+	}
+
+	trigger stop
+	{
+		accum 0 set 1
+
+		accum 2 abort_if_equal 1
+		enablespeaker uje_roll_sound		// geluidje
+	}
+
+	trigger check_score_200
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 6
+		globalaccum 1 set 1
+	}
+	trigger check_score_100
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 7
+		globalaccum 1 set 1
+	}
+	trigger check_score_40
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 9
+		globalaccum 1 set 1
+	}
+	trigger check_score_20
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 2
+		globalaccum 1 set 1
+	}
+	trigger check_score_20_star
+	{
+		globalaccum 1 set 0
+		accum 3 abort_if_equal 0
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_3
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_3
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_4
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+
+	trigger hold_on
+	{
+		accum 2 set 1
+	}
+	trigger hold_off
+	{
+		accum 2 set 0
+	}
+
+	trigger run0
+	{
+		accum 0 abort_if_equal 1
+		faceangles -15 0 0 20
+		accum 1 set 6
+		accum 3 set 0
+		trigger self run1
+	}
+	trigger run1
+	{
+		accum 0 abort_if_equal 1
+		faceangles -30 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run2
+	}
+	trigger run2
+	{
+		accum 0 abort_if_equal 1
+		faceangles -45 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run3
+	}
+	trigger run3
+	{
+		accum 0 abort_if_equal 1
+		faceangles -60 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run4
+	}
+	trigger run4
+	{
+		accum 0 abort_if_equal 1
+		faceangles -75 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run5
+	}
+	trigger run5
+	{
+		accum 0 abort_if_equal 1
+		faceangles -90 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run6
+	}
+	trigger run6
+	{
+		accum 0 abort_if_equal 1
+		faceangles -105 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run7
+	}
+	trigger run7
+	{
+		accum 0 abort_if_equal 1
+		faceangles -120 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run8
+	}
+	trigger run8
+	{
+		accum 0 abort_if_equal 1
+		faceangles -135 0 0 20
+		accum 1 set 7
+		accum 3 set 0
+		trigger self run9
+	}
+	trigger run9
+	{
+		accum 0 abort_if_equal 1
+		faceangles -150 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run10
+	}
+	trigger run10
+	{
+		accum 0 abort_if_equal 1
+		faceangles -165 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run11
+	}
+	trigger run11
+	{
+		accum 0 abort_if_equal 1
+		faceangles -180 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run12
+	}
+	trigger run12
+	{
+		accum 0 abort_if_equal 1
+		faceangles -195 0 0 20
+		accum 1 set 11
+		accum 3 set 1
+		trigger self run13
+	}
+	trigger run13
+	{
+		accum 0 abort_if_equal 1
+		faceangles -210 0 0 20
+		accum 1 set 5
+		accum 3 set 2
+		trigger self run14
+	}
+	trigger run14
+	{
+		accum 0 abort_if_equal 1
+		faceangles -225 0 0 20
+		accum 1 set 9
+		accum 3 set 3
+		trigger self run15
+	}
+	trigger run15
+	{
+		accum 0 abort_if_equal 1
+		faceangles -240 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run16
+	}
+	trigger run16
+	{
+		accum 0 abort_if_equal 1
+		faceangles -255 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run17
+	}
+	trigger run17
+	{
+		accum 0 abort_if_equal 1
+		faceangles -270 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run18
+	}
+	trigger run18
+	{
+		accum 0 abort_if_equal 1
+		faceangles -285 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run19
+	}
+	trigger run19
+	{
+		accum 0 abort_if_equal 1
+		faceangles -300 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run20
+	}
+	trigger run20
+	{
+		accum 0 abort_if_equal 1
+		faceangles -315 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run21
+	}
+	trigger run21
+	{
+		accum 0 abort_if_equal 1
+		faceangles -330 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run22
+	}
+	trigger run22
+	{
+		accum 0 abort_if_equal 1
+		faceangles -345 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run23
+	}
+	trigger run23
+	{
+		accum 0 abort_if_equal 1
+		faceangles -360 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run0
+	}
+
+	trigger stershader
+	{
+		accum 3 abort_if_equal 0
+		trigger self stershader1
+		trigger self stershader2
+		trigger self stershader3
+	}
+	trigger stershader1
+	{
+		accum 3 abort_if_not_equal 1
+		remapshader "textures/UJE_warzone_sniper/uje_domster_2" "textures/UJE_warzone_sniper/uje_domster_2_0"
+		remapshaderflush
+	}
+	trigger stershader2
+	{
+		accum 3 abort_if_not_equal 2
+		remapshader "textures/UJE_warzone_sniper/uje_domster_2" "textures/UJE_warzone_sniper/uje_domster_2_1"
+		remapshaderflush
+	}
+	trigger stershader3
+	{
+		accum 3 abort_if_not_equal 3
+		remapshader "textures/UJE_warzone_sniper/uje_domster_2" "textures/UJE_warzone_sniper/uje_domster_2_2"
+		remapshaderflush
+	}
+}
+gok_rol_3
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		accum 1 set 4
+		accum 2 set 0
+		accum 3 set 0
+	}
+
+	trigger start
+	{
+		// rol vast? dan klaar..
+		accum 2 abort_if_equal 1
+
+		remapshader "textures/UJE_warzone_sniper/uje_domster_3" "textures/UJE_warzone_sniper/uje_domster_3"
+		remapshaderflush
+
+		accum 0 set 0
+		trigger self run0
+	}
+
+	trigger stop
+	{
+		accum 0 set 1
+
+		accum 2 abort_if_equal 1
+		enablespeaker uje_roll_sound		// geluidje
+	}
+
+	trigger check_score_200
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 6
+		globalaccum 1 set 1
+	}
+	trigger check_score_100
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 7
+		globalaccum 1 set 1
+	}
+	trigger check_score_40
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 9
+		globalaccum 1 set 1
+	}
+	trigger check_score_20
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 2
+		globalaccum 1 set 1
+	}
+	trigger check_score_20_star
+	{
+		globalaccum 1 set 0
+		accum 3 abort_if_equal 0
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_3
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_2
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_3
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_0
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_1
+	{
+		globalaccum 1 set 0
+		accum 1 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+
+	trigger hold_on
+	{
+		accum 2 set 1
+	}
+	trigger hold_off
+	{
+		accum 2 set 0
+	}
+
+	trigger run0
+	{
+		accum 0 abort_if_equal 1
+		faceangles -15 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run1
+	}
+	trigger run1
+	{
+		accum 0 abort_if_equal 1
+		faceangles -30 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run2
+	}
+	trigger run2
+	{
+		accum 0 abort_if_equal 1
+		faceangles -45 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run3
+	}
+	trigger run3
+	{
+		accum 0 abort_if_equal 1
+		faceangles -60 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run4
+	}
+	trigger run4
+	{
+		accum 0 abort_if_equal 1
+		faceangles -75 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run5
+	}
+	trigger run5
+	{
+		accum 0 abort_if_equal 1
+		faceangles -90 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run6
+	}
+	trigger run6
+	{
+		accum 0 abort_if_equal 1
+		faceangles -105 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run7
+	}
+	trigger run7
+	{
+		accum 0 abort_if_equal 1
+		faceangles -120 0 0 20
+		accum 1 set 11
+		accum 3 set 0
+		trigger self run8
+	}
+	trigger run8
+	{
+		accum 0 abort_if_equal 1
+		faceangles -135 0 0 20
+		accum 1 set 9
+		accum 3 set 0
+		trigger self run9
+	}
+	trigger run9
+	{
+		accum 0 abort_if_equal 1
+		faceangles -150 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run10
+	}
+	trigger run10
+	{
+		accum 0 abort_if_equal 1
+		faceangles -165 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run11
+	}
+	trigger run11
+	{
+		accum 0 abort_if_equal 1
+		faceangles -180 0 0 20
+		accum 1 set 8
+		accum 3 set 0
+		trigger self run12
+	}
+	trigger run12
+	{
+		accum 0 abort_if_equal 1
+		faceangles -195 0 0 20
+		accum 1 set 7
+		accum 3 set 0
+		trigger self run13
+	}
+	trigger run13
+	{
+		accum 0 abort_if_equal 1
+		faceangles -210 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run14
+	}
+	trigger run14
+	{
+		accum 0 abort_if_equal 1
+		faceangles -225 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run15
+	}
+	trigger run15
+	{
+		accum 0 abort_if_equal 1
+		faceangles -240 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run16
+	}
+	trigger run16
+	{
+		accum 0 abort_if_equal 1
+		faceangles -255 0 0 20
+		accum 1 set 6
+		accum 3 set 1
+		trigger self run17
+	}
+	trigger run17
+	{
+		accum 0 abort_if_equal 1
+		faceangles -270 0 0 20
+		accum 1 set 5
+		accum 3 set 2
+		trigger self run18
+	}
+	trigger run18
+	{
+		accum 0 abort_if_equal 1
+		faceangles -285 0 0 20
+		accum 1 set 4
+		accum 3 set 3
+		trigger self run19
+	}
+	trigger run19
+	{
+		accum 0 abort_if_equal 1
+		faceangles -300 0 0 20
+		accum 1 set 3
+		accum 3 set 0
+		trigger self run20
+	}
+	trigger run20
+	{
+		accum 0 abort_if_equal 1
+		faceangles -315 0 0 20
+		accum 1 set 2
+		accum 3 set 0
+		trigger self run21
+	}
+	trigger run21
+	{
+		accum 0 abort_if_equal 1
+		faceangles -330 0 0 20
+		accum 1 set 1
+		accum 3 set 0
+		trigger self run22
+	}
+	trigger run22
+	{
+		accum 0 abort_if_equal 1
+		faceangles -345 0 0 20
+		accum 1 set 10
+		accum 3 set 0
+		trigger self run23
+	}
+	trigger run23
+	{
+		accum 0 abort_if_equal 1
+		faceangles -360 0 0 20
+		accum 1 set 4
+		accum 3 set 0
+		trigger self run0
+	}
+
+	trigger stershader
+	{
+		accum 3 abort_if_equal 0
+		trigger self stershader1
+		trigger self stershader2
+		trigger self stershader3
+	}
+	trigger stershader1
+	{
+		accum 3 abort_if_not_equal 1
+		remapshader "textures/UJE_warzone_sniper/uje_domster_3" "textures/UJE_warzone_sniper/uje_domster_3_0"
+		remapshaderflush
+	}
+	trigger stershader2
+	{
+		accum 3 abort_if_not_equal 2
+		remapshader "textures/UJE_warzone_sniper/uje_domster_3" "textures/UJE_warzone_sniper/uje_domster_3_1"
+		remapshaderflush
+	}
+	trigger stershader3
+	{
+		accum 3 abort_if_not_equal 3
+		remapshader "textures/UJE_warzone_sniper/uje_domster_3" "textures/UJE_warzone_sniper/uje_domster_3_2"
+		remapshaderflush
+	}
+}
+
+// score display
+//func_static
+score_display
+{
+	spawn
+	{
+		wait 50
+		trigger self show100_0
+		trigger self show10_0
+		trigger self show1_0
+		trigger self show_gain_0
+	}
+
+	trigger reset
+	{
+		trigger self reset100
+		trigger self reset10
+		trigger self reset1
+	}
+	trigger reset100
+	{
+		setstate score100_0 invisible
+		setstate score100_1 invisible
+		setstate score100_2 invisible
+		setstate score100_3 invisible
+		setstate score100_4 invisible
+		setstate score100_5 invisible
+		setstate score100_6 invisible
+		setstate score100_7 invisible
+		setstate score100_8 invisible
+		setstate score100_9 invisible
+	}
+	trigger reset10
+	{
+
+		setstate score10_0 invisible
+		setstate score10_1 invisible
+		setstate score10_2 invisible
+		setstate score10_3 invisible
+		setstate score10_4 invisible
+		setstate score10_5 invisible
+		setstate score10_6 invisible
+		setstate score10_7 invisible
+		setstate score10_8 invisible
+		setstate score10_9 invisible
+	}
+	trigger reset1
+	{
+
+		setstate score1_0 invisible
+		setstate score1_1 invisible
+		setstate score1_2 invisible
+		setstate score1_3 invisible
+		setstate score1_4 invisible
+		setstate score1_5 invisible
+		setstate score1_6 invisible
+		setstate score1_7 invisible
+		setstate score1_8 invisible
+		setstate score1_9 invisible
+	}
+
+	// 100-tallen
+	trigger show100_0
+	{
+		trigger self reset100
+		setstate score100_0 default
+	}
+	trigger show100_1
+	{
+		trigger self reset100
+		setstate score100_1 default
+	}
+	trigger show100_2
+	{
+		trigger self reset100
+		setstate score100_2 default
+	}
+	trigger show100_3
+	{
+		trigger self reset100
+		setstate score100_3 default
+	}
+	trigger show100_4
+	{
+		trigger self reset100
+		setstate score100_4 default
+	}
+	trigger show100_5
+	{
+		trigger self reset100
+		setstate score100_5 default
+	}
+	trigger show100_6
+	{
+		trigger self reset100
+		setstate score100_6 default
+	}
+	trigger show100_7
+	{
+		trigger self reset100
+		setstate score100_7 default
+	}
+	trigger show100_8
+	{
+		trigger self reset100
+		setstate score100_8 default
+	}
+	trigger show100_9
+	{
+		trigger self reset100
+		setstate score100_9 default
+	}
+
+	// 10-tallen
+	trigger show10_0
+	{
+		trigger self reset10
+		setstate score10_0 default
+	}
+	trigger show10_1
+	{
+		trigger self reset10
+		setstate score10_1 default
+	}
+	trigger show10_2
+	{
+		trigger self reset10
+		setstate score10_2 default
+	}
+	trigger show10_3
+	{
+		trigger self reset10
+		setstate score10_3 default
+	}
+	trigger show10_4
+	{
+		trigger self reset10
+		setstate score10_4 default
+	}
+	trigger show10_5
+	{
+		trigger self reset10
+		setstate score10_5 default
+	}
+	trigger show10_6
+	{
+		trigger self reset10
+		setstate score10_6 default
+	}
+	trigger show10_7
+	{
+		trigger self reset10
+		setstate score10_7 default
+	}
+	trigger show10_8
+	{
+		trigger self reset10
+		setstate score10_8 default
+	}
+	trigger show10_9
+	{
+		trigger self reset10
+		setstate score10_9 default
+	}
+
+	// eenheden
+	trigger show1_0
+	{
+		trigger self reset1
+		setstate score1_0 default
+	}
+	trigger show1_1
+	{
+		trigger self reset1
+		setstate score1_1 default
+	}
+	trigger show1_2
+	{
+		trigger self reset1
+		setstate score1_2 default
+	}
+	trigger show1_3
+	{
+		trigger self reset1
+		setstate score1_3 default
+	}
+	trigger show1_4
+	{
+		trigger self reset1
+		setstate score1_4 default
+	}
+	trigger show1_5
+	{
+		trigger self reset1
+		setstate score1_5 default
+	}
+	trigger show1_6
+	{
+		trigger self reset1
+		setstate score1_6 default
+	}
+	trigger show1_7
+	{
+		trigger self reset1
+		setstate score1_7 default
+	}
+	trigger show1_8
+	{
+		trigger self reset1
+		setstate score1_8 default
+	}
+	trigger show1_9
+	{
+		trigger self reset1
+		setstate score1_9 default
+	}
+
+	// gehaalde score resetten
+	trigger reset_gain100
+	{
+		setstate score_gain100_ invisible
+		setstate score_gain100_1 invisible
+		setstate score_gain100_2 invisible
+	}
+	trigger reset_gain10
+	{
+		setstate score_gain10_ invisible
+		setstate score_gain10_0 invisible
+		setstate score_gain10_1 invisible
+		setstate score_gain10_3 invisible
+		setstate score_gain10_2 invisible
+		setstate score_gain10_4 invisible
+		setstate score_gain10_6 invisible
+	}
+	trigger reset_gain1
+	{
+		setstate score_gain1_ invisible
+		setstate score_gain1_0 invisible
+		setstate score_gain1_2 invisible
+		setstate score_gain1_4 invisible
+		setstate score_gain1_6 invisible
+		setstate score_gain1_8 invisible
+	}
+	trigger reset_gain
+	{
+		trigger self reset_gain100
+		trigger self reset_gain10
+		trigger self reset_gain1
+	}
+
+	// de punten die zojuist zijn gehaald
+	trigger show_gain_0
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_ default
+		setstate score_gain1_0 default
+	}
+	trigger show_gain_2
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_ default
+		setstate score_gain1_2 default
+	}
+	trigger show_gain_4
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_ default
+		setstate score_gain1_4 default
+	}
+	trigger show_gain_8
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_ default
+		setstate score_gain1_8 default
+	}
+	trigger show_gain_12
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_1 default
+		setstate score_gain1_2 default
+	}
+	trigger show_gain_16
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_1 default
+		setstate score_gain1_6 default
+	}
+	trigger show_gain_20
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_2 default
+		setstate score_gain1_0 default
+	}
+	trigger show_gain_32
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_3 default
+		setstate score_gain1_2 default
+	}
+	trigger show_gain_40
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_4 default
+		setstate score_gain1_0 default
+	}
+	trigger show_gain_64
+	{
+		trigger self reset_gain
+		setstate score_gain100_ default
+		setstate score_gain10_6 default
+		setstate score_gain1_4 default
+	}
+	trigger show_gain_100
+	{
+		trigger self reset_gain
+		setstate score_gain100_1 default
+		setstate score_gain10_0 default
+		setstate score_gain1_0 default
+	}
+	trigger show_gain_128
+	{
+		trigger self reset_gain
+		setstate score_gain100_1 default
+		setstate score_gain10_2 default
+		setstate score_gain1_8 default
+	}
+	trigger show_gain_200
+	{
+		trigger self reset_gain
+		setstate score_gain100_2 default
+		setstate score_gain10_0 default
+		setstate score_gain1_0 default
+	}
+}
+
+
+//-------------------------------------------------
+// discotheek
+//-------------------------------------------------
+// tbv. target_script_trigger
+draaitafels_script
+{
+	trigger plaat_afgelopen
+	{
+		trigger draaitafel0 timeout
+		trigger draaitafel1 timeout
+		trigger draaitafel2 timeout
+	}
+}
+
+//func_invisible_user
+draaitafel0_trigger
+{
+	spawn
+	{
+		wait 50
+		trigger draaitafel0 stop
+	}
+	activate
+	{
+		trigger draaitafel0 toggle
+	}
+}
+draaitafel1_trigger
+{
+	spawn
+	{
+		wait 50
+		trigger draaitafel1 stop
+	}
+	activate
+	{
+		trigger draaitafel1 toggle
+	}
+}
+draaitafel2_trigger
+{
+	spawn
+	{
+		wait 50
+		trigger draaitafel2 stop
+	}
+	activate
+	{
+		trigger draaitafel2 toggle
+	}
+}
+
+// script_mover
+// accum 0 = draaien (0=nee, 1=ja)
+// accum 1 = tmp register
+// accum 2 = timeout teller (plaat afgelopen)
+draaitafel0
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		trigger self reset
+	}
+
+	trigger reset
+	{
+		accum 2 set 12			// 12 x 5 seconden = 1 minuut
+	}
+	trigger timeout
+	{
+		accum 2 abort_if_equal 0	// timeout al verlopen..
+		accum 2 inc -1
+		accum 2 abort_if_greater_than 0
+		trigger self endsound
+	}
+
+	trigger play
+	{
+		accum 0 abort_if_equal 1
+		resetscript
+		trigger self reset
+		setrotation 0 -78 0		// plaatje draaien
+		stopsound			// geluid aan
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 1024
+		accum 0 set 1
+
+		trigger draaitafel1 stop //endsound
+		trigger draaitafel2 stop //endsound
+	}
+	trigger stop
+	{
+		accum 0 abort_if_equal 0
+		halt
+		stoprotation
+		stopsound
+		accum 0 set 0
+	}
+	trigger endsound
+	{
+		accum 0 abort_if_equal 0
+		// geluid langzaam uit..
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 896
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 768
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 640
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 512
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 384
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 128
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house1.wav looping volume 64
+		wait 1000
+		trigger self stop
+	}
+
+	trigger toggle
+	{
+		accum 1 set 0
+		trigger self toggle_on
+		accum 1 abort_if_equal 1
+		trigger self toggle_off
+	}
+	trigger toggle_on
+	{
+		accum 0 abort_if_equal 1
+		trigger self play
+		accum 1 set 1
+	}
+	trigger toggle_off
+	{
+		accum 0 abort_if_equal 0
+		trigger self stop
+	}
+}
+draaitafel1
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		trigger self reset
+	}
+
+	trigger reset
+	{
+		accum 2 set 12
+	}
+	trigger timeout
+	{
+		accum 2 abort_if_equal 0
+		accum 2 inc -1
+		accum 2 abort_if_greater_than 0
+		trigger self endsound
+	}
+
+	trigger play
+	{
+		accum 0 abort_if_equal 1
+		resetscript
+		trigger self reset
+		setrotation 0 -78 0
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 1024
+		accum 0 set 1
+
+		trigger draaitafel0 stop //endsound
+		trigger draaitafel2 stop //endsound
+	}
+	trigger stop
+	{
+		accum 0 abort_if_equal 0
+		halt
+		stoprotation
+		stopsound
+		accum 0 set 0
+	}
+	trigger endsound
+	{
+		accum 0 abort_if_equal 0
+		// geluid langzaam uit..
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 896
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 768
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 640
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 512
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 384
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 128
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house2.wav looping volume 64
+		wait 1000
+		trigger self stop
+	}
+
+	trigger toggle
+	{
+		accum 1 set 0
+		trigger self toggle_on
+		accum 1 abort_if_equal 1
+		trigger self toggle_off
+	}
+	trigger toggle_on
+	{
+		accum 0 abort_if_equal 1
+		trigger self play
+		accum 1 set 1
+	}
+	trigger toggle_off
+	{
+		accum 0 abort_if_equal 0
+		trigger self stop
+	}
+}
+draaitafel2
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		trigger self reset
+	}
+
+	trigger reset
+	{
+		accum 2 set 12
+	}
+	trigger timeout
+	{
+		accum 2 abort_if_equal 0
+		accum 2 inc -1
+		accum 2 abort_if_greater_than 0
+		trigger self endsound
+	}
+
+	trigger play
+	{
+		accum 0 abort_if_equal 1
+		resetscript
+		trigger self reset
+		setrotation 0 -78 0
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 1024
+		accum 0 set 1
+
+		trigger draaitafel0 stop //endsound
+		trigger draaitafel1 stop //endsound
+	}
+	trigger stop
+	{
+		accum 0 abort_if_equal 0
+		halt
+		stoprotation
+		stopsound
+		accum 0 set 0
+	}
+	trigger endsound
+	{
+		accum 0 abort_if_equal 0
+		// geluid langzaam uit..
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 896
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 768
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 640
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 512
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 384
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 128
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/house3.wav looping volume 64
+		wait 1000
+		trigger self stop
+	}
+
+	trigger toggle
+	{
+		accum 1 set 0
+		trigger self toggle_on
+		accum 1 abort_if_equal 1
+		trigger self toggle_off
+	}
+	trigger toggle_on
+	{
+		accum 0 abort_if_equal 1
+		trigger self play
+		accum 1 set 1
+	}
+	trigger toggle_off
+	{
+		accum 0 abort_if_equal 0
+		trigger self stop
+	}
+}
+
+//target_smoke
+disco_smoke_trigger
+{
+	spawn
+	{
+		wait 50
+	}
+	activate
+	{
+		setstate disco_smoke_trigger invisible
+		alertentity disco_smoke
+		wait 10000
+		alertentity disco_smoke
+		setstate disco_smoke_trigger default
+	}
+}
+
+//script_mover
+// accum 0 = richting
+disco_laser
+{
+	spawn
+	{
+		wait 50
+//		trigger self hide
+//		wait 60000
+//		wait 60000
+//		trigger self show
+		trigger self move
+	}
+
+	trigger hide
+	{
+		setstate disco_laser invisible
+		setstate disco_laser1 invisible
+		setstate disco_laser2 invisible
+		setstate disco_laser3 invisible
+	}
+	trigger show
+	{
+		setstate disco_laser default
+		setstate disco_laser1 default
+		setstate disco_laser2 default
+		setstate disco_laser3 default
+	}
+
+	trigger move
+	{
+		accum 0 random 21
+		accum 0 trigger_if_equal 0 disco_laser move0
+		accum 0 trigger_if_equal 1 disco_laser move1
+		accum 0 trigger_if_equal 2 disco_laser move2
+		accum 0 trigger_if_equal 3 disco_laser move3
+		accum 0 trigger_if_equal 4 disco_laser move4
+		accum 0 trigger_if_equal 5 disco_laser move5
+		accum 0 trigger_if_equal 6 disco_laser move6
+		accum 0 trigger_if_equal 7 disco_laser move7
+		accum 0 trigger_if_equal 8 disco_laser move8
+		accum 0 trigger_if_equal 9 disco_laser move9
+		accum 0 trigger_if_equal 10 disco_laser move10
+		accum 0 trigger_if_equal 11 disco_laser move11
+		accum 0 trigger_if_equal 12 disco_laser move12
+		accum 0 trigger_if_equal 13 disco_laser move13
+		accum 0 trigger_if_equal 14 disco_laser move14
+		accum 0 trigger_if_equal 15 disco_laser move15
+		accum 0 trigger_if_equal 16 disco_laser move16
+		accum 0 trigger_if_equal 17 disco_laser move17
+		accum 0 trigger_if_equal 18 disco_laser move18
+		accum 0 trigger_if_equal 19 disco_laser move19
+		accum 0 trigger_if_equal 20 disco_laser move20
+	}
+
+	trigger move0
+	{
+		trigger disco_laser1 move0
+		trigger disco_laser2 move0
+		trigger disco_laser3 move0
+		faceangles 10 90 0 500 deccel
+		trigger self move
+	}
+	trigger move1
+	{
+		trigger disco_laser1 move1
+		trigger disco_laser2 move1
+		trigger disco_laser3 move1
+		faceangles 20 70 0 500 deccel
+		trigger self move
+	}
+	trigger move2
+	{
+		trigger disco_laser1 move2
+		trigger disco_laser2 move2
+		trigger disco_laser3 move2
+		faceangles 30 50 0 500 deccel
+		trigger self move
+	}
+	trigger move3
+	{
+		trigger disco_laser1 move3
+		trigger disco_laser2 move3
+		trigger disco_laser3 move3
+		faceangles 40 30 0 500 deccel
+		trigger self move
+	}
+	trigger move4
+	{
+		trigger disco_laser1 move4
+		trigger disco_laser2 move4
+		trigger disco_laser3 move4
+		faceangles 50 10 0 500 deccel
+		trigger self move
+	}
+	trigger move5
+	{
+		trigger disco_laser1 move5
+		trigger disco_laser2 move5
+		trigger disco_laser3 move5
+		faceangles 60 -10 0 500 deccel
+		trigger self move
+	}
+	trigger move6
+	{
+		trigger disco_laser1 move6
+		trigger disco_laser2 move6
+		trigger disco_laser3 move6
+		faceangles 70 -30 0 500 deccel
+		trigger self move
+	}
+	trigger move7
+	{
+		trigger disco_laser1 move7
+		trigger disco_laser2 move7
+		trigger disco_laser3 move7
+		faceangles 80 -50 0 500 deccel
+		trigger self move
+	}
+	trigger move8
+	{
+		trigger disco_laser1 move8
+		trigger disco_laser2 move8
+		trigger disco_laser3 move8
+		faceangles 90 -70 0 500 deccel
+		trigger self move
+	}
+	trigger move9
+	{
+		trigger disco_laser1 move9
+		trigger disco_laser2 move9
+		trigger disco_laser3 move9
+		faceangles 70 -90 0 500 deccel
+		trigger self move
+	}
+	trigger move10
+	{
+		trigger disco_laser1 move10
+		trigger disco_laser2 move10
+		trigger disco_laser3 move10
+		faceangles 50 -70 0 500 deccel
+		trigger self move
+	}
+	trigger move11
+	{
+		trigger disco_laser1 move11
+		trigger disco_laser2 move11
+		trigger disco_laser3 move11
+		faceangles 30 70 0 500 deccel
+		trigger self move
+	}
+	trigger move12
+	{
+		trigger disco_laser1 move12
+		trigger disco_laser2 move12
+		trigger disco_laser3 move12
+		faceangles 10 40 0 500 deccel
+		trigger self move
+	}
+	trigger move13
+	{
+		trigger disco_laser1 move13
+		trigger disco_laser2 move13
+		trigger disco_laser3 move13
+		faceangles 0 40 0 500 deccel
+		trigger self move
+	}
+	trigger move14
+	{
+		trigger disco_laser1 move14
+		trigger disco_laser2 move14
+		trigger disco_laser3 move14
+		faceangles 20 -20 0 500 deccel
+		trigger self move
+	}
+	trigger move15
+	{
+		trigger disco_laser1 move15
+		trigger disco_laser2 move15
+		trigger disco_laser3 move15
+		faceangles 40 20 0 500 deccel
+		trigger self move
+	}
+	trigger move16
+	{
+		trigger disco_laser1 move16
+		trigger disco_laser2 move16
+		trigger disco_laser3 move16
+		faceangles 60 -50 0 500 deccel
+		trigger self move
+	}
+	trigger move17
+	{
+		trigger disco_laser1 move17
+		trigger disco_laser2 move17
+		trigger disco_laser3 move17
+		faceangles 80 50 0 500 deccel
+		trigger self move
+	}
+	trigger move18
+	{
+		trigger disco_laser1 move18
+		trigger disco_laser2 move18
+		trigger disco_laser3 move18
+		faceangles 50 -45 0 500 deccel
+		trigger self move
+	}
+	trigger move19
+	{
+		trigger disco_laser1 move19
+		trigger disco_laser2 move19
+		trigger disco_laser3 move19
+		faceangles 60 45 0 500 deccel
+		trigger self move
+	}
+	trigger move20
+	{
+		trigger disco_laser1 move20
+		trigger disco_laser2 move20
+		trigger disco_laser3 move20
+		faceangles 30 0 0 500 deccel
+		trigger self move
+	}
+}
+disco_laser1
+{
+	spawn
+	{
+		wait 50
+	}
+
+	trigger move0
+	{
+		wait 100
+		halt
+		faceangles 10 90 0 500 deccel
+	}
+	trigger move1
+	{
+		wait 100
+		halt
+		faceangles 20 70 0 500 deccel
+	}
+	trigger move2
+	{
+		wait 100
+		halt
+		faceangles 30 50 0 500 deccel
+	}
+	trigger move3
+	{
+		wait 100
+		halt
+		faceangles 40 30 0 500 deccel
+	}
+	trigger move4
+	{
+		wait 100
+		halt
+		faceangles 50 10 0 500 deccel
+	}
+	trigger move5
+	{
+		wait 100
+		halt
+		faceangles 60 -10 0 500 deccel
+	}
+	trigger move6
+	{
+		wait 100
+		halt
+		faceangles 70 -30 0 500 deccel
+	}
+	trigger move7
+	{
+		wait 100
+		halt
+		faceangles 80 -50 0 500 deccel
+	}
+	trigger move8
+	{
+		wait 100
+		halt
+		faceangles 90 -70 0 500 deccel
+	}
+	trigger move9
+	{
+		wait 100
+		halt
+		faceangles 70 -90 0 500 deccel
+	}
+	trigger move10
+	{
+		wait 100
+		halt
+		faceangles 50 -70 0 500 deccel
+	}
+	trigger move11
+	{
+		wait 100
+		halt
+		faceangles 30 70 0 500 deccel
+	}
+	trigger move12
+	{
+		wait 100
+		halt
+		faceangles 10 40 0 500 deccel
+	}
+	trigger move13
+	{
+		wait 100
+		halt
+		faceangles 0 40 0 500 deccel
+	}
+	trigger move14
+	{
+		wait 100
+		halt
+		faceangles 20 -20 0 500 deccel
+	}
+	trigger move15
+	{
+		wait 100
+		halt
+		faceangles 40 20 0 500 deccel
+	}
+	trigger move16
+	{
+		wait 100
+		halt
+		faceangles 60 -50 0 500 deccel
+	}
+	trigger move17
+	{
+		wait 100
+		halt
+		faceangles 80 50 0 500 deccel
+	}
+	trigger move18
+	{
+		wait 100
+		halt
+		faceangles 50 -45 0 500 deccel
+	}
+	trigger move19
+	{
+		wait 100
+		halt
+		faceangles 60 45 0 500 deccel
+	}
+	trigger move20
+	{
+		wait 100
+		halt
+		faceangles 30 0 0 500 deccel
+	}
+}
+disco_laser2
+{
+	spawn
+	{
+		wait 50
+	}
+
+	trigger move0
+	{
+		wait 200
+		halt
+		faceangles 10 90 0 500 deccel
+	}
+	trigger move1
+	{
+		wait 200
+		halt
+		faceangles 20 70 0 500 deccel
+	}
+	trigger move2
+	{
+		wait 200
+		halt
+		faceangles 30 50 0 500 deccel
+	}
+	trigger move3
+	{
+		wait 200
+		halt
+		faceangles 40 30 0 500 deccel
+	}
+	trigger move4
+	{
+		wait 200
+		halt
+		faceangles 50 10 0 500 deccel
+	}
+	trigger move5
+	{
+		wait 200
+		halt
+		faceangles 60 -10 0 500 deccel
+	}
+	trigger move6
+	{
+		wait 200
+		halt
+		faceangles 70 -30 0 500 deccel
+	}
+	trigger move7
+	{
+		wait 200
+		halt
+		faceangles 80 -50 0 500 deccel
+	}
+	trigger move8
+	{
+		wait 200
+		halt
+		faceangles 90 -70 0 500 deccel
+	}
+	trigger move9
+	{
+		wait 200
+		halt
+		faceangles 70 -90 0 500 deccel
+	}
+	trigger move10
+	{
+		wait 200
+		halt
+		faceangles 50 -70 0 500 deccel
+	}
+	trigger move11
+	{
+		wait 200
+		halt
+		faceangles 30 70 0 500 deccel
+	}
+	trigger move12
+	{
+		wait 200
+		halt
+		faceangles 10 40 0 500 deccel
+	}
+	trigger move13
+	{
+		wait 200
+		halt
+		faceangles 0 40 0 500 deccel
+	}
+	trigger move14
+	{
+		wait 200
+		halt
+		faceangles 20 -20 0 500 deccel
+	}
+	trigger move15
+	{
+		wait 200
+		halt
+		faceangles 40 20 0 500 deccel
+	}
+	trigger move16
+	{
+		wait 200
+		halt
+		faceangles 60 -50 0 500 deccel
+	}
+	trigger move17
+	{
+		wait 200
+		halt
+		faceangles 80 50 0 500 deccel
+	}
+	trigger move18
+	{
+		wait 200
+		halt
+		faceangles 50 -45 0 500 deccel
+	}
+	trigger move19
+	{
+		wait 200
+		halt
+		faceangles 60 45 0 500 deccel
+	}
+	trigger move20
+	{
+		wait 200
+		halt
+		faceangles 30 0 0 500 deccel
+	}
+}
+disco_laser3
+{
+	spawn
+	{
+		wait 50
+	}
+
+	trigger move0
+	{
+		wait 300
+		halt
+		faceangles 10 90 0 500 deccel
+	}
+	trigger move1
+	{
+		wait 300
+		halt
+		faceangles 20 70 0 500 deccel
+	}
+	trigger move2
+	{
+		wait 300
+		halt
+		faceangles 30 50 0 500 deccel
+	}
+	trigger move3
+	{
+		wait 300
+		halt
+		faceangles 40 30 0 500 deccel
+	}
+	trigger move4
+	{
+		wait 300
+		halt
+		faceangles 50 10 0 500 deccel
+	}
+	trigger move5
+	{
+		wait 300
+		halt
+		faceangles 60 -10 0 500 deccel
+	}
+	trigger move6
+	{
+		wait 100
+		halt
+		faceangles 70 -30 0 500 deccel
+	}
+	trigger move7
+	{
+		wait 300
+		halt
+		faceangles 80 -50 0 500 deccel
+	}
+	trigger move8
+	{
+		wait 300
+		halt
+		faceangles 90 -70 0 500 deccel
+	}
+	trigger move9
+	{
+		wait 300
+		halt
+		faceangles 70 -90 0 500 deccel
+	}
+	trigger move10
+	{
+		wait 300
+		halt
+		faceangles 50 -70 0 500 deccel
+	}
+	trigger move11
+	{
+		wait 300
+		halt
+		faceangles 30 70 0 500 deccel
+	}
+	trigger move12
+	{
+		wait 300
+		halt
+		faceangles 10 40 0 500 deccel
+	}
+	trigger move13
+	{
+		wait 300
+		halt
+		faceangles 0 40 0 500 deccel
+	}
+	trigger move14
+	{
+		wait 300
+		halt
+		faceangles 20 -20 0 500 deccel
+	}
+	trigger move15
+	{
+		wait 300
+		halt
+		faceangles 40 20 0 500 deccel
+	}
+	trigger move16
+	{
+		wait 300
+		halt
+		faceangles 60 -50 0 500 deccel
+	}
+	trigger move17
+	{
+		wait 300
+		halt
+		faceangles 80 50 0 500 deccel
+	}
+	trigger move18
+	{
+		wait 300
+		halt
+		faceangles 50 -45 0 500 deccel
+	}
+	trigger move19
+	{
+		wait 300
+		halt
+		faceangles 60 45 0 500 deccel
+	}
+	trigger move20
+	{
+		wait 300
+		halt
+		faceangles 30 0 0 500 deccel
+	}
+}
+
+//-- spiegelbol
+//script_mover
+spiegelbol
+{
+	spawn
+	{
+		wait 50
+		setrotation 0 10 0
+	}
+}
+
+//-- vloer
+// tbv. target_script_trigger
+secret_script
+{
+	trigger timeout
+	{
+		trigger trigger_high_secret timeout
+		trigger trigger_low_secret timeout
+	}
+}
+
+//trigger_multiple
+// accum 0 = timeout waarde (0=geen speler in trigger, <>0=speler in trigger)
+trigger_high_secret
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+	activate
+	{
+		accum 0 set 10
+		trigger clip_secret show
+		trigger trigger_low_secret high_active
+	}
+
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		trigger trigger_low_secret high_inactive
+	}
+}
+
+//trigger_multiple
+// accum 0 = timeout waarde (0=geen speler in trigger, <>0=speler in trigger)
+// accum 1 = upper trigger activated?? (0=nee, 1=ja)
+trigger_low_secret
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		accum 1 set 0
+	}
+	activate
+	{
+		accum 0 set 2
+		trigger self check_passage
+	}
+
+	trigger high_active
+	{
+		accum 1 set 1
+	}
+	trigger high_inactive
+	{
+		accum 1 set 0
+	}
+
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+	}
+
+	trigger check_passage
+	{
+		accum 1 abort_if_equal 1
+		trigger clip_secret hide
+		wait 1000
+		trigger clip_secret show
+	}
+}
+
+//func_static
+// accum 0 = zichtbaar?? (0=nee, 1=ja)
+clip_secret
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger show
+	{
+		accum 0 abort_if_equal 1
+		accum 0 set 1
+		setstate clip_secret default
+	}
+	trigger hide
+	{
+		accum 0 abort_if_equal 0
+		accum 0 set 0
+		setstate clip_secret invisible
+	}
+}
+
+// This map is so full of script and triggers thati have to use a func_door to make me a button.. :-S
+// The func_door has a somewhat strange behavior (toggle doesn't work??), so i have to script my workaround..
+//tbv. target_script_trigger
+// accum 0 = actief?? (0=nee, 1=ja)
+// accum 1 = tmp (if-then-else)
+// accum 2 = tmp toggle stuff
+secret_buttonMedic_script
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		accum 2 set 0
+	}
+
+	trigger toggle
+	{
+		trigger self only_once
+
+		accum 1 set 0
+		trigger self toggle_on
+		accum 1 abort_if_equal 1
+		trigger self toggle_off
+	}
+	trigger toggle_on
+	{
+		accum 2 abort_if_equal 0
+		accum 0 abort_if_equal 1
+
+		setstate healthkast1_trigger default
+		setstate healthkast2_trigger default
+		setstate healthkast3_trigger default
+		setstate healthkast4_trigger default
+		setstate health7_target default
+		setstate health8_target default
+		wm_announce "Health-cabinets enabled.."
+
+		accum 1 set 1
+		accum 0 set 1
+	}
+	trigger toggle_off
+	{
+		accum 2 abort_if_equal 0
+		accum 0 abort_if_equal 0
+
+		setstate healthkast1_trigger invisible
+		setstate healthkast2_trigger invisible
+		setstate healthkast3_trigger invisible
+		setstate healthkast4_trigger invisible
+		setstate health7_target invisible
+		setstate health8_target invisible
+		wm_announce "Health-cabinets disabled.."
+
+		accum 0 set 0
+	}
+	trigger only_once
+	{
+		accum 2 inc 1
+		accum 2 abort_if_equal 1
+		accum 2 set 0
+	}
+}
+//
+secret_buttonRocket_script
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		accum 2 set 0
+	}
+
+	trigger toggle
+	{
+		trigger self only_once
+
+		accum 1 set 0
+		trigger self toggle_on
+		accum 1 abort_if_equal 1
+		trigger self toggle_off
+	}
+	trigger toggle_on
+	{
+		accum 2 abort_if_equal 0
+		accum 0 abort_if_equal 1
+
+		alertentity rocket0
+		alertentity rocket1
+		alertentity rocket2
+		alertentity rocket3
+		alertentity rocket4
+		alertentity rocket5
+		alertentity rocket6
+		alertentity rocket7
+		wm_announce "Danger.."
+
+		accum 1 set 1
+		accum 0 set 1
+	}
+	trigger toggle_off
+	{
+		accum 2 abort_if_equal 0
+		accum 0 abort_if_equal 0
+
+		alertentity rocket0
+		alertentity rocket1
+		alertentity rocket2
+		alertentity rocket3
+		alertentity rocket4
+		alertentity rocket5
+		alertentity rocket6
+		alertentity rocket7
+
+		accum 0 set 0
+	}
+	trigger only_once
+	{
+		accum 2 inc 1
+		accum 2 abort_if_equal 1
+		accum 2 set 0
+	}
+}
+
+
+//tbv target_script_trigger
+// accum 0 = actieve camera (0, 1, 2 of 3)
+cam_switcher_script
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+		setstate cam1_surface invisible
+		setstate cam2_surface invisible
+		setstate cam3_surface invisible
+	}
+	trigger switch
+	{
+		trigger self nextcam
+		trigger self cam0
+		trigger self cam1
+		trigger self cam2
+		trigger self cam3
+	}
+
+	trigger nextcam
+	{
+		accum 0 inc 1
+		accum 0 abort_if_less_than 4
+		accum 0 set 0
+	}
+	trigger cam0
+	{
+		accum 0 abort_if_not_equal 0
+		setstate cam0_surface default
+//		setstate cam1_surface invisible
+//		setstate cam2_surface invisible
+		setstate cam3_surface invisible
+	}
+	trigger cam1
+	{
+		accum 0 abort_if_not_equal 1
+		setstate cam0_surface invisible
+		setstate cam1_surface default
+//		setstate cam2_surface invisible
+//		setstate cam3_surface invisible
+	}
+	trigger cam2
+	{
+		accum 0 abort_if_not_equal 2
+//		setstate cam0_surface invisible
+		setstate cam1_surface invisible
+		setstate cam2_surface default
+//		setstate cam3_surface invisible
+	}
+	trigger cam3
+	{
+		accum 0 abort_if_not_equal 3
+//		setstate cam0_surface invisible
+//		setstate cam1_surface invisible
+		setstate cam2_surface invisible
+		setstate cam3_surface default
+	}
+}
+
+
+//=============================================================================
+//=== Pilsjes tappen
+//=============================================================================
+//func_invisible_user
+// accum 0 = bezig met tappen (0=nee, 1=ja)
+biertje
+{
+	spawn
+	{
+		// niet bezig met tappen
+		accum 0 set 0
+	}
+	activate
+	{
+		// bezig met tappen?? dan niet triggeren..
+		accum 0 abort_if_equal 1
+		// bezig met tappen
+		accum 0 set 1
+
+		trigger tap start_tappen
+	}
+	trigger stop_tappen
+	{
+		// niet bezig met tappen
+		accum 0 set 0
+	}
+}
+
+//script_mover
+// accum 0 = aantal pilsjes getapt
+// accum 1 = bit 10..1 pilsje opgedronken (hidden) (0=shown, 1=hidden)
+tap
+{
+	spawn
+	{
+		wait 400
+
+		// alle pilsjes zijn zichtbaar: 1024+512+256 + 128+64+32+16+8+4+2 = 2046
+		accum 1 set 2046
+
+		// alle pilsjes verbergen
+		trigger self pils_hide
+	}
+	trigger pils_hide
+	{
+		// teller resetten
+		accum 0 set 0
+
+		trigger self pils_1_hide
+		trigger self pils_2_hide
+		trigger self pils_3_hide
+		trigger self pils_4_hide
+		trigger self pils_5_hide
+		trigger self pils_6_hide
+		trigger self pils_7_hide
+		trigger self pils_8_hide
+		trigger self pils_9_hide
+		trigger self pils_10_hide
+	}
+	trigger pils_1_show
+	{
+		accum 1 bitset 1
+		setstate pils_1 default
+		setstate pils_1_trigger default
+	}
+	trigger pils_2_show
+	{
+		accum 1 bitset 2
+		setstate pils_2 default
+		setstate pils_2_trigger default
+	}
+	trigger pils_3_show
+	{
+		accum 1 bitset 3
+		setstate pils_3 default
+		setstate pils_3_trigger default
+	}
+	trigger pils_4_show
+	{
+		accum 1 bitset 4
+		setstate pils_4 default
+		setstate pils_4_trigger default
+	}
+	trigger pils_5_show
+	{
+		accum 1 bitset 5
+		setstate pils_5 default
+		setstate pils_5_trigger default
+	}
+	trigger pils_6_show
+	{
+		accum 1 bitset 6
+		setstate pils_6 default
+		setstate pils_6_trigger default
+	}
+	trigger pils_7_show
+	{
+		accum 1 bitset 7
+		setstate pils_7 default
+		setstate pils_7_trigger default
+	}
+	trigger pils_8_show
+	{
+		accum 1 bitset 8
+		setstate pils_8 default
+		setstate pils_8_trigger default
+	}
+	trigger pils_9_show
+	{
+		accum 1 bitset 9
+		setstate pils_9 default
+		setstate pils_9_trigger default
+	}
+	trigger pils_10_show
+	{
+		accum 1 bitset 10
+		setstate pils_10 default
+		setstate pils_10_trigger default
+	}
+
+	trigger pils_1_hide
+	{
+		accum 1 abort_if_not_bitset 1
+		accum 1 bitreset 1
+		setstate pils_1 invisible
+		setstate pils_1_trigger invisible
+	}
+	trigger pils_2_hide
+	{
+		accum 1 abort_if_not_bitset 2
+		accum 1 bitreset 2
+		setstate pils_2 invisible
+		setstate pils_2_trigger invisible
+	}
+	trigger pils_3_hide
+	{
+		accum 1 abort_if_not_bitset 3
+		accum 1 bitreset 3
+		setstate pils_3 invisible
+		setstate pils_3_trigger invisible
+	}
+	trigger pils_4_hide
+	{
+		accum 1 abort_if_not_bitset 4
+		accum 1 bitreset 4
+		setstate pils_4 invisible
+		setstate pils_4_trigger invisible
+	}
+	trigger pils_5_hide
+	{
+		accum 1 abort_if_not_bitset 5
+		accum 1 bitreset 5
+		setstate pils_5 invisible
+		setstate pils_5_trigger invisible
+	}
+	trigger pils_6_hide
+	{
+		accum 1 abort_if_not_bitset 6
+		accum 1 bitreset 6
+		setstate pils_6 invisible
+		setstate pils_6_trigger invisible
+	}
+	trigger pils_7_hide
+	{
+		accum 1 abort_if_not_bitset 7
+		accum 1 bitreset 7
+		setstate pils_7 invisible
+		setstate pils_7_trigger invisible
+	}
+	trigger pils_8_hide
+	{
+		accum 1 abort_if_not_bitset 8
+		accum 1 bitreset 8
+		setstate pils_8 invisible
+		setstate pils_8_trigger invisible
+	}
+	trigger pils_9_hide
+	{
+		accum 1 abort_if_not_bitset 9
+		accum 1 bitreset 9
+		setstate pils_9 invisible
+		setstate pils_9_trigger invisible
+	}
+	trigger pils_10_hide
+	{
+		accum 1 abort_if_not_bitset 10
+		accum 1 bitreset 10
+		setstate pils_10 invisible
+		setstate pils_10_trigger invisible
+	}
+
+	trigger start_tappen
+	{
+		stoprotation
+		halt
+		faceangles 0 0 0 1 //reset
+
+		enablespeaker tap_biertje	// wait 4500
+		
+		//faceangles <pitch> <yaw> <roll> <duration|gototime> [accel|deccel]
+		faceangles 0 0 -90 2000 wait
+
+		accum 0 inc 1
+
+		//(global)accum <buffer_index> trigger_if_equal <value> <scriptblock> <trigger_event>
+		accum 0 trigger_if_equal 1 tap pils_1_show
+		accum 0 trigger_if_equal 2 tap pils_2_show
+		accum 0 trigger_if_equal 3 tap pils_3_show
+		accum 0 trigger_if_equal 4 tap pils_4_show
+		accum 0 trigger_if_equal 5 tap pils_5_show
+		accum 0 trigger_if_equal 6 tap pils_6_show
+		accum 0 trigger_if_equal 7 tap pils_7_show
+		accum 0 trigger_if_equal 8 tap pils_8_show
+		accum 0 trigger_if_equal 9 tap pils_9_show
+		accum 0 trigger_if_equal 10 tap pils_10_show
+		accum 0 trigger_if_equal 11 tap pils_hide
+
+		// hendel terug bewegen
+		faceangles 0 0 0 2000 wait
+
+		stoprotation
+		halt
+
+		wait 500
+		disablespeaker tap_biertje
+
+		// niet bezig met tappen
+		trigger biertje stop_tappen
+	}
+}
+
+//func_invisible
+pils_1_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_1_hide
+	}
+}
+pils_2_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_2_hide
+	}
+}
+pils_3_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_3_hide
+	}
+}
+pils_4_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_4_hide
+	}
+}
+pils_5_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_5_hide
+	}
+}
+pils_6_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_6_hide
+	}
+}
+pils_7_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_7_hide
+	}
+}
+pils_8_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_8_hide
+	}
+}
+pils_9_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_9_hide
+	}
+}
+pils_10_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_10_hide
+	}
+}
+
+
+//=============================================================================
+//=== Bel - rondje geven
+//=============================================================================
+//func_invisible_user
+bel_rondje
+{
+	spawn
+	{
+		wait 50
+	}
+	activate
+	{
+		trigger rondje trakteren
+	}
+}
+
+//script_mover
+rondje
+{
+	spawn
+	{
+		wait 100
+		faceangles 0 0 0 1
+	}
+	trigger trakteren
+	{
+		stoprotation
+		halt
+		faceangles 0 0 0 1
+
+		enablespeaker uje_rondje
+
+		faceangles 0 30 5 125
+		faceangles 5 -30 10 125
+		faceangles 10 30 5 125
+		faceangles 5 -30 0 125
+		faceangles 0 30 -5 125
+		faceangles -5 -30 -10 125
+		faceangles -10 30 -5 125
+		faceangles -5 -30 0 125
+		faceangles 0 30 5 125
+		faceangles 0 -30 0 125
+
+		stoprotation
+		halt
+		faceangles 0 0 0 1
+	}
+}
+
+
+//=============================================================================
+//=== teleports
+//=============================================================================
+// globalaccum 5: bit 0 = paradrop allies is bezet
+//              : bit 1 = paradrop axis is bezet
+//              : bit 2 = axis in rode telefooncel
+//              : bit 3 = allies in rode telefooncel
+//              : bit 4 = axis in blauwe telefooncel
+//              : bit 5 = allies in blauwe telefooncel
+//=============================================================================
+
+// tbv. target_script_trigger
+drwho_check_players_script
+{
+	trigger timeout
+	{
+		trigger red_check_axis timeout
+		trigger red_check_allies timeout
+		trigger blue_check_axis timeout
+		trigger blue_check_allies timeout
+	}
+}
+
+//trigger_multiple
+// accum 0 = trigger timeout waarde (0=verlopen, <>0=niet verlopen)
+// axis speler in de axis telefooncel??
+red_check_axis
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+	activate
+	{
+		accum 0 set 2
+		globalaccum 5 bitset 2
+	}
+
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		globalaccum 5 bitreset 2
+	}
+}
+// allied speler in de axis telefooncel??
+red_check_allies
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+	activate
+	{
+		accum 0 set 2
+		globalaccum 5 bitset 3
+	}
+
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		globalaccum 5 bitreset 3
+	}
+}
+
+//func_invisible_user
+tele_trigger_axis
+{
+	spawn
+	{
+		wait 50
+		setstate drwho_axis_fx0 invisible
+		setstate drwho_axis_fx1 invisible
+		setstate drwho_axis_fx2 invisible
+		//setstate drwho_axis_fx3 invisible
+	}
+	activate
+	{
+		trigger tele_door_axis open
+	}
+
+	trigger show
+	{
+		setstate tele_trigger_axis default
+	}
+	trigger hide
+	{
+		setstate tele_trigger_axis invisible
+	}
+}
+
+//script_mover
+// accum 0 = deur open? (0=gesloten, 1=open, 2=in beweging)
+tele_door_axis
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_not_equal 0
+		accum 0 set 2
+		trigger tele_trigger_axis hide
+		faceangles 0 -90 0 1000 deccel
+		accum 0 set 1
+
+		wait 2000				// na 2 seconden vanzelf de deur sluiten
+		trigger self close
+	}
+
+	trigger close
+	{
+		accum 0 abort_if_not_equal 1
+		accum 0 set 2
+		faceangles 0 0 0 1000 deccel
+		accum 0 set 0
+
+		wait 2100				// wacht tot de trigger-timeout is verlopen
+		trigger self continue
+		trigger tele_trigger_axis show
+	}
+
+	trigger continue
+	{
+		// Er moet wel een axis in staan, (bit 2 = axis in rode telefooncel)
+		// er mag geen allies in staan. (bit 3 = allies in rode telefooncel)
+		globalaccum 5 abort_if_not_bitset 2
+		globalaccum 5 abort_if_bitset 3
+		resetscript
+		trigger teleport_axis drwho
+	}
+}
+
+//trigger_teleport
+teleport_axis
+{
+	spawn
+	{
+		wait 50
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate teleport_axis default
+	}
+	trigger hide
+	{
+		setstate teleport_axis invisible
+	}
+
+	trigger drwho
+	{
+		disablespeaker uje_drwho
+		enablespeaker uje_drwho
+		setstate drwho_axis_fx0 default
+		setstate drwho_axis_fx1 default
+		setstate drwho_axis_fx2 default
+		wait 5000
+
+		trigger self teleport
+		trigger para_axis drop
+
+		wait 1000
+		setstate drwho_axis_fx2 invisible
+		setstate drwho_axis_fx1 invisible
+		setstate drwho_axis_fx0 invisible
+		trigger self hide
+		trigger tele_trigger_axis show
+	}
+
+	trigger teleport
+	{
+		globalaccum 5 abort_if_not_bitset 1	// alleen uitvoeren als de paradrop bezet is
+		trigger self show
+	}
+}
+
+//paradrop
+para_axis
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 0
+//		faceangles 0 90 0 1
+		setstate teleport_para_axis invisible
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate para_axis default
+		trigger para_axis_model show
+	}
+	trigger hide
+	{
+		setstate para_axis invisible
+		trigger para_axis_model hide
+	}
+
+	trigger drop
+	{
+		globalaccum 5 abort_if_bitset 1
+		globalaccum 5 bitset 1			// paradrop axis bezet
+		trigger self show
+		wait 50
+		setposition paradrop_axis_air
+		setstate teleport_para_axis default
+		wait 50
+		setstate teleport_para_axis invisible
+		gotomarker paradrop_axis_ground 100 wait
+		trigger self hide
+		globalaccum 5 bitreset 1		// paradrop axis vrij
+	}
+
+	trigger reset
+	{
+		resetscript
+		halt
+		trigger self hide
+		globalaccum 5 bitreset 1		// paradrop axis vrij
+	}
+	trigger cleartimeout
+	{
+		accum 0 set 2
+	}
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		trigger self reset
+	}
+}
+
+//misc_gamemodel
+para_axis_model
+{
+	spawn
+	{
+		wait 150
+		attachtotag para_axis tag_origin
+	}
+
+	trigger show
+	{
+		setstate para_axis_model default
+	}
+	trigger hide
+	{
+		setstate para_axis_model invisible
+	}
+}
+
+//trigger_multiple
+para_axis_occupied
+{
+	spawn
+	{
+		wait 150
+		attachtotag para_axis tag_origin
+	}
+	activate
+	{
+		trigger para_axis cleartimeout
+	}
+}
+
+// tbv. target_script_trigger
+para_axis_occupied_script
+{
+	trigger timeout
+	{
+		trigger para_axis timeout
+	}
+}
+
+
+// axis speler in de allied telefooncel??
+blue_check_axis
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+	activate
+	{
+		accum 0 set 2
+		globalaccum 5 bitset 4
+	}
+
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		globalaccum 5 bitreset 4
+	}
+}
+// allied speler in de allied telefooncel??
+blue_check_allies
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+	activate
+	{
+		accum 0 set 2
+		globalaccum 5 bitset 5
+	}
+
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		globalaccum 5 bitreset 5
+	}
+}
+
+//func_invisible_user
+tele_trigger_allies
+{
+	spawn
+	{
+		wait 50
+		setstate drwho_allies_fx0 invisible
+		setstate drwho_allies_fx1 invisible
+		setstate drwho_allies_fx2 invisible
+		//setstate drwho_allies_fx3 invisible
+	}
+	activate
+	{
+		trigger tele_door_allies open
+	}
+
+	trigger show
+	{
+		setstate tele_trigger_allies default
+	}
+	trigger hide
+	{
+		setstate tele_trigger_allies invisible
+	}
+}
+
+tele_door_allies
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 0
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_not_equal 0
+		accum 0 set 2
+		trigger tele_trigger_allies hide
+		faceangles 0 90 0 1000 deccel
+		accum 0 set 1
+		wait 2000
+		trigger self close
+	}
+
+	trigger close
+	{
+		accum 0 abort_if_not_equal 1
+		accum 0 set 2
+		faceangles 0 0 0 1000 deccel
+		accum 0 set 0
+
+		wait 2100				// wacht tot de trigger-timeout is verlopen
+		trigger self continue
+		trigger tele_trigger_allies show
+	}
+
+	trigger continue
+	{
+		// Er mag geen axis in staan. (bit 4 = axis in blauwe telefooncel)
+		// er moet wel een allies in staan, (bit 5 = allies in blauwe telefooncel)
+		globalaccum 5 abort_if_bitset 4
+		globalaccum 5 abort_if_not_bitset 5
+		resetscript
+		trigger teleport_allies drwho
+	}
+}
+
+teleport_allies
+{
+	spawn
+	{
+		wait 50
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate teleport_allies default
+	}
+	trigger hide
+	{
+		setstate teleport_allies invisible
+	}
+
+	trigger drwho
+	{
+		disablespeaker uje_drwho
+		enablespeaker uje_drwho
+		setstate drwho_allies_fx0 default
+		setstate drwho_allies_fx1 default
+		setstate drwho_allies_fx2 default
+		wait 5000
+
+		trigger self teleport
+		trigger para_allies drop
+
+		wait 1000
+		setstate drwho_allies_fx2 invisible
+		setstate drwho_allies_fx1 invisible
+		setstate drwho_allies_fx0 invisible
+		trigger self hide
+		trigger tele_trigger_allies show
+	}
+
+	trigger teleport
+	{
+		globalaccum 5 abort_if_not_bitset 0	// alleen uitvoeren als de paradrop bezet is
+		trigger self show
+	}
+}
+
+//paradrop
+// accum 0 = timeout waarde
+para_allies
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 0
+		setstate teleport_para_allies invisible
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate para_allies default
+		trigger para_allies_model show
+	}
+	trigger hide
+	{
+		setstate para_allies invisible
+		trigger para_allies_model hide
+	}
+
+	trigger drop
+	{
+		globalaccum 5 abort_if_bitset 0
+		globalaccum 5 bitset 0			// paradrop allies bezet
+		trigger self show
+		wait 50
+		setposition paradrop_allies_air
+		setstate teleport_para_allies default
+		wait 50
+		setstate teleport_para_allies invisible
+		gotomarker paradrop_allies_ground 100 wait
+		trigger self hide
+		globalaccum 5 bitreset 0		// paradrop allies vrij
+	}
+
+	trigger reset
+	{
+		resetscript
+		halt
+		trigger self hide
+		globalaccum 5 bitreset 0		// paradrop allies vrij
+	}
+	trigger cleartimeout
+	{
+		accum 0 set 2
+	}
+	trigger timeout
+	{
+		accum 0 abort_if_equal 0
+		accum 0 inc -1
+		accum 0 abort_if_greater_than 0
+		trigger self reset
+	}
+}
+
+//misc_gamemodel
+para_allies_model
+{
+	spawn
+	{
+		wait 150
+		attachtotag para_allies tag_origin
+	}
+
+	trigger show
+	{
+		setstate para_allies_model default
+	}
+	trigger hide
+	{
+		setstate para_allies_model invisible
+	}
+}
+
+//trigger_multiple
+para_allies_occupied
+{
+	spawn
+	{
+		wait 150
+		attachtotag para_allies tag_origin
+	}
+	activate
+	{
+		trigger para_allies cleartimeout
+	}
+}
+
+para_allies_occupied_script
+{
+	trigger timeout
+	{
+		trigger para_allies timeout
+	}
+}
+
+
+//-------------------------------------------------
+// dartbord
+//-------------------------------------------------
+//script_mover
+// accum 0 = status (0=open, 1=closed, 2=in motion)
+dart_deurL
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_equal 0
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		alertentity dart_sound
+		faceangles 0 -180 0 1000 deccel
+		accum 0 set 0
+	}
+	trigger close
+	{
+		accum 0 abort_if_equal 1
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 0 0 0 1000 deccel
+		accum 0 set 1
+	}
+	trigger toggle
+	{
+		trigger self open
+		trigger self close
+	}
+}
+
+dart_deurR
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+	}
+
+	trigger open
+	{
+		accum 0 abort_if_equal 0
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		alertentity dart_sound
+		faceangles 0 180 0 1000 deccel
+		accum 0 set 0
+	}
+	trigger close
+	{
+		accum 0 abort_if_equal 1
+		accum 0 abort_if_equal 2
+		accum 0 set 2
+		faceangles 0 0 0 1000 deccel
+		accum 0 set 1
+	}
+	trigger toggle
+	{
+		trigger self open
+		trigger self close
+	}
+}
+
+dart_trigger
+{
+	spawn
+	{
+		wait 50
+	}
+	activate
+	{
+		trigger dart_deurL toggle
+		trigger dart_deurR toggle
+
+		setstate dart_trigger invisible
+		wait 20000
+		setstate dart_trigger default
+
+		trigger dart_deurL toggle
+		trigger dart_deurR toggle
+	}
+}
+
+//script_mover
+dart_bullseye
+{
+	spawn
+	{
+		wait 50
+	}
+	pain
+	{
+		wm_announce "Bullseye"
+	}
+}
+
+
+//-------------------------------------------------
+// rijdende trucks
+//-------------------------------------------------
+//script_mover
+truck_axis
+{
+	spawn
+	{
+		wait 50
+
+		// truck op pad0 plaatsen
+		followspline 0 truck_axis_pad_0 50000 length 200 wait
+
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger self pad_0_1_2_3_4_5_6_7
+	}
+
+	trigger pad_0_1_2_3_4_5_6_7
+	{
+		followspline 0 truck_axis_pad_0 200 length 200 wait
+		followspline 0 truck_axis_pad_1 200 length 200 wait
+		followspline 0 truck_axis_pad_2 200 length 200 wait
+		followspline 0 truck_axis_pad_3 200 length 200 wait
+		followspline 0 truck_axis_pad_4 200 length 200 wait
+		followspline 0 truck_axis_pad_5 200 length 200 wait
+
+		// kies linksaf/rechtsaf
+		accum 1 random 100
+		trigger self bocht_7L_8
+		trigger self bocht_7R_0
+	}
+	trigger pad_7b_6b_5b_4b_3b_2b_1b_0b
+	{
+		followspline 0 truck_axis_pad_7b 200 length 200 wait
+		followspline 0 truck_axis_pad_6b 200 length 200 wait
+		followspline 0 truck_axis_pad_5b 200 length 200 wait
+		followspline 0 truck_axis_pad_4b 200 length 200 wait
+		followspline 0 truck_axis_pad_3b 200 length 200 wait
+		followspline 0 truck_axis_pad_2b 200 length 200 wait
+
+		// kies linksaf/rechtdoor
+		accum 1 random 100
+		trigger self bocht_0L_7
+		trigger self bocht_0R_8
+	}
+	trigger pad_8_9_10_11_12_13
+	{
+		followspline 0 truck_axis_pad_8 200 length 200 wait
+		followspline 0 truck_axis_pad_9 200 length 200 wait
+		followspline 0 truck_axis_pad_10 200 length 200 wait
+		followspline 0 truck_axis_pad_11 200 length 200 wait
+
+		// kies rechtdoor/rechtsaf
+		accum 1 random 100
+		trigger self pad_13L
+		trigger self pad_13R
+	}
+	trigger pad_13b_12b_11b_10b_9b_8b
+	{
+		followspline 0 truck_axis_pad_13b 200 length 200 wait
+		followspline 0 truck_axis_pad_12b 200 length 200 wait
+		followspline 0 truck_axis_pad_11b 200 length 200 wait
+		followspline 0 truck_axis_pad_10b 200 length 200 wait
+
+		// kies rechtdoor/rechtsaf
+		accum 1 random 100
+		trigger self bocht_8L_0
+		trigger self bocht_8R_7
+	}
+	trigger pad_13L
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_axis_pad_12 200 length 200 wait
+		followspline 0 truck_axis_pad_13L 200 length 200 wait
+
+		trigger truck_axis_wheelsf_model draai_niet
+		trigger truck_axis_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_axis_wheelsf_model draai_achteruit
+		trigger truck_axis_wheelsb_model draai_achteruit
+
+		followspline 1 truck_axis_pad_20 100 length 192 wait
+		followspline 1 truck_axis_pad_22 100 length 192 wait
+		followspline 1 truck_axis_pad_17b 100 length 192 wait
+
+		trigger truck_axis_wheelsf_model draai_niet
+		trigger truck_axis_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/uje_claxon.wav volume 200
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_axis_wheelsf_model draai_vooruit
+		trigger truck_axis_wheelsb_model draai_vooruit
+
+		followspline 0 truck_axis_pad_17a 200 length 200 wait
+		followspline 0 truck_axis_pad_18 200 length 200 wait
+
+		trigger self pad_13b_12b_11b_10b_9b_8b
+	}
+	trigger pad_13R
+	{
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_axis_pad_13R_ 200 length 200 wait
+		followspline 0 truck_axis_pad_13R 200 length 200 wait
+		followspline 0 truck_axis_pad_24 200 length 200 wait
+
+		trigger truck_axis_wheelsf_model draai_niet
+		trigger truck_axis_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/uje_claxon.wav volume 200
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_axis_wheelsb_model draai_achteruit
+		trigger truck_axis_wheelsf_model draai_achteruit
+
+		followspline 1 truck_axis_pad_16 100 length 192 wait
+		followspline 1 truck_axis_pad_14 100 length 192 wait
+		followspline 1 truck_axis_pad_15 100 length 192 wait
+
+		trigger truck_axis_wheelsf_model draai_niet
+		trigger truck_axis_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_axis_wheelsf_model draai_vooruit
+		trigger truck_axis_wheelsb_model draai_vooruit
+
+		followspline 0 truck_axis_pad_15b 200 length 200 wait
+
+		trigger self pad_13b_12b_11b_10b_9b_8b
+	}
+
+	trigger bocht_7L_8
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_axis_pad_6_ 200 length 200 wait
+		followspline 0 truck_axis_pad_7L_8 200 length 200 wait
+		trigger self pad_8_9_10_11_12_13
+	}
+	trigger bocht_7R_0
+	{
+		followspline 0 truck_axis_pad_6 200 length 200 wait
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_axis_pad_7R_0 200 length 200 wait
+		trigger self pad_0_1_2_3_4_5_6_7
+	}
+	trigger bocht_0L_7
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_axis_pad_1_ 200 length 200 wait
+		followspline 0 truck_axis_pad_0L_7 200 length 200 wait
+		trigger self pad_7b_6b_5b_4b_3b_2b_1b_0b
+	}
+	trigger bocht_0R_8
+	{
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_axis_pad_1b 200 length 200 wait
+		followspline 0 truck_axis_pad_0R_8 200 length 200 wait
+		trigger self pad_8_9_10_11_12_13
+	}
+	trigger bocht_8L_0
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_axis_pad_9b 200 length 200 wait
+		followspline 0 truck_axis_pad_8L_0 200 length 200 wait
+		trigger self pad_0_1_2_3_4_5_6_7
+	}
+	trigger bocht_8R_7
+	{
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_axis_pad_9b_ 200 length 200 wait
+		followspline 0 truck_axis_pad_8R_7 200 length 200 wait
+		trigger self pad_7b_6b_5b_4b_3b_2b_1b_0b
+	}
+}
+
+//misc_gamemodel
+truck_axis_wheelsf_model
+{
+	spawn
+	{
+		wait 50
+		attachtotag truck_axis tag_wfront
+		trigger self draai_vooruit
+	}
+
+	trigger draai_vooruit
+	{
+		stoprotation
+		setrotation 400 0 0
+	}
+	trigger draai_achteruit
+	{
+		stoprotation
+		setrotation -200 0 0
+	}
+	trigger draai_niet
+	{
+		stoprotation
+		setrotation 0 0 0
+	}
+}
+
+//misc_gamemodel
+truck_axis_wheelsb_model
+{
+	spawn
+	{
+		wait 50
+		attachtotag truck_axis tag_wback
+		trigger self draai_vooruit
+	}
+
+	trigger draai_vooruit
+	{
+		stoprotation
+		setrotation 400 0 0
+	}
+	trigger draai_achteruit
+	{
+		stoprotation
+		setrotation -200 0 0
+	}
+	trigger draai_niet
+	{
+		stoprotation
+		setrotation 0 0 0
+	}
+}
+
+
+
+truck_allies
+{
+	spawn
+	{
+		wait 50
+
+		// truck op pad0 plaatsen
+		followspline 0 truck_allies_pad_0 50000 length 200 wait
+
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger self pad_0_1_2_3_4_5_6_7
+	}
+
+	trigger pad_0_1_2_3_4_5_6_7
+	{
+		followspline 0 truck_allies_pad_0 200 length 200 wait
+		followspline 0 truck_allies_pad_1 200 length 200 wait
+		followspline 0 truck_allies_pad_2 200 length 200 wait
+		followspline 0 truck_allies_pad_3 200 length 200 wait
+		followspline 0 truck_allies_pad_4 200 length 200 wait
+		followspline 0 truck_allies_pad_5 200 length 200 wait
+
+		// kies linksaf/rechtsaf
+		accum 1 random 100
+		trigger self bocht_7L_8
+		trigger self bocht_7R_0
+	}
+	trigger pad_7b_6b_5b_4b_3b_2b_1b_0b
+	{
+		followspline 0 truck_allies_pad_7b 200 length 200 wait
+		followspline 0 truck_allies_pad_6b 200 length 200 wait
+		followspline 0 truck_allies_pad_5b 200 length 200 wait
+		followspline 0 truck_allies_pad_4b 200 length 200 wait
+		followspline 0 truck_allies_pad_3b 200 length 200 wait
+		followspline 0 truck_allies_pad_2b 200 length 200 wait
+
+		// kies linksaf/rechtdoor
+		accum 1 random 100
+		trigger self bocht_0L_7
+		trigger self bocht_0R_8
+	}
+	trigger pad_8_9_10_11_12_13
+	{
+		followspline 0 truck_allies_pad_8 200 length 200 wait
+		followspline 0 truck_allies_pad_9 200 length 200 wait
+		followspline 0 truck_allies_pad_10 200 length 200 wait
+		followspline 0 truck_allies_pad_11 200 length 200 wait
+
+		// kies rechtdoor/rechtsaf
+		accum 1 random 100
+		trigger self pad_13L
+		trigger self pad_13R
+	}
+	trigger pad_13b_12b_11b_10b_9b_8b
+	{
+		followspline 0 truck_allies_pad_13b 200 length 200 wait
+		followspline 0 truck_allies_pad_12b 200 length 200 wait
+		followspline 0 truck_allies_pad_11b 200 length 200 wait
+		followspline 0 truck_allies_pad_10b 200 length 200 wait
+
+		// kies rechtdoor/rechtsaf
+		accum 1 random 100
+		trigger self bocht_8L_0
+		trigger self bocht_8R_7
+	}
+	trigger pad_13L
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_allies_pad_12 200 length 200 wait
+		followspline 0 truck_allies_pad_13L 200 length 200 wait
+
+		trigger truck_allies_wheelsf_model draai_niet
+		trigger truck_allies_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_allies_wheelsf_model draai_achteruit
+		trigger truck_allies_wheelsb_model draai_achteruit
+
+		followspline 1 truck_allies_pad_20 100 length 192 wait
+		followspline 1 truck_allies_pad_22 100 length 192 wait
+		followspline 1 truck_allies_pad_17b 100 length 192 wait
+
+		trigger truck_allies_wheelsf_model draai_niet
+		trigger truck_allies_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/uje_claxon.wav volume 200
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_allies_wheelsf_model draai_vooruit
+		trigger truck_allies_wheelsb_model draai_vooruit
+
+		followspline 0 truck_allies_pad_17a 200 length 200 wait
+		followspline 0 truck_allies_pad_18 200 length 200 wait
+
+		trigger self pad_13b_12b_11b_10b_9b_8b
+	}
+	trigger pad_13R
+	{
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_allies_pad_13R_ 200 length 200 wait
+		followspline 0 truck_allies_pad_13R 200 length 200 wait
+		followspline 0 truck_allies_pad_24 200 length 200 wait
+
+		trigger truck_allies_wheelsf_model draai_niet
+		trigger truck_allies_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/uje_warzone_sniper/uje_claxon.wav volume 200
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_allies_wheelsb_model draai_achteruit
+		trigger truck_allies_wheelsf_model draai_achteruit
+
+		followspline 1 truck_allies_pad_16 100 length 192 wait
+		followspline 1 truck_allies_pad_14 100 length 192 wait
+		followspline 1 truck_allies_pad_15 100 length 192 wait
+
+		trigger truck_allies_wheelsf_model draai_niet
+		trigger truck_allies_wheelsb_model draai_niet
+
+		stopsound
+		playsound sound/vehicles/truck/truck_revdown.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_idle.wav looping
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_revup.wav volume 100
+		wait 1000
+		stopsound
+		playsound sound/vehicles/truck/truck_move.wav looping
+
+		trigger truck_allies_wheelsf_model draai_vooruit
+		trigger truck_allies_wheelsb_model draai_vooruit
+
+		followspline 0 truck_allies_pad_15b 200 length 200 wait
+
+		trigger self pad_13b_12b_11b_10b_9b_8b
+	}
+
+	trigger bocht_7L_8
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_allies_pad_6_ 200 length 200 wait
+		followspline 0 truck_allies_pad_7L_8 200 length 200 wait
+		trigger self pad_8_9_10_11_12_13
+	}
+	trigger bocht_7R_0
+	{
+		followspline 0 truck_allies_pad_6 200 length 200 wait
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_allies_pad_7R_0 200 length 200 wait
+		trigger self pad_0_1_2_3_4_5_6_7
+	}
+	trigger bocht_0L_7
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_allies_pad_1_ 200 length 200 wait
+		followspline 0 truck_allies_pad_0L_7 200 length 200 wait
+		trigger self pad_7b_6b_5b_4b_3b_2b_1b_0b
+	}
+	trigger bocht_0R_8
+	{
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_allies_pad_1b 200 length 192 wait
+		followspline 0 truck_allies_pad_0R_8 200 length 192 wait
+		trigger self pad_8_9_10_11_12_13
+	}
+	trigger bocht_8L_0
+	{
+		accum 1 abort_if_less_than 50
+		followspline 0 truck_allies_pad_9b 200 length 200 wait
+		followspline 0 truck_allies_pad_8L_0 200 length 200 wait
+		trigger self pad_0_1_2_3_4_5_6_7
+	}
+	trigger bocht_8R_7
+	{
+		accum 1 abort_if_greater_than 49
+		followspline 0 truck_allies_pad_9b_ 200 length 200 wait
+		followspline 0 truck_allies_pad_8R_7 200 length 200 wait
+		trigger self pad_7b_6b_5b_4b_3b_2b_1b_0b
+	}
+}
+
+truck_allies_wheelsf_model
+{
+	spawn
+	{
+		wait 100
+		attachtotag truck_allies tag_wfront
+		trigger self draai_vooruit
+	}
+
+	trigger draai_vooruit
+	{
+		stoprotation
+		setrotation 400 0 0
+	}
+	trigger draai_achteruit
+	{
+		stoprotation
+		setrotation -200 0 0
+	}
+	trigger draai_niet
+	{
+		stoprotation
+		setrotation 0 0 0
+	}
+}
+
+truck_allies_wheelsb_model
+{
+	spawn
+	{
+		wait 100
+		attachtotag truck_allies tag_wback
+		trigger self draai_vooruit
+	}
+
+	trigger draai_vooruit
+	{
+		stoprotation
+		setrotation 400 0 0
+	}
+	trigger draai_achteruit
+	{
+		stoprotation
+		setrotation -200 0 0
+	}
+	trigger draai_niet
+	{
+		stoprotation
+		setrotation 0 0 0
+	}
+}

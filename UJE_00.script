@@ -1,0 +1,8228 @@
+// globalaccum 0: enablespeaker priority check (uje_spanning_4 > uje_down)
+// globalaccum 1: tmp register (voor gokkast)
+// globalaccum 2: vasthouden rol teller mechanisme
+// globalaccum 3: dodenherdenking ceremonie start-mechanisme voor 5 knoppen
+// globalaccum 4: credo bezig?? (0=nee, 1=ja)
+
+game_manager
+{
+	// 0 = Axis
+	// 1 = Allies
+	spawn
+	{
+		// reset textures
+		remapshader "models/mapobjects/tanks_sd/churchill_flat" "textures/UJE_00/churchill_flat_uje"
+		// reset shaders
+//		remapshader "textures/UJE_00/sign_red" "textures/UJE_00/sign_red"
+//		remapshader "textures/UJE_00/sign_red_nolight" "textures/UJE_00/sign_red_nolight"
+
+		remapshaderflush
+
+		// achtergrond geluiden
+		disablespeaker uje_bomb_fg
+		disablespeaker uje_spanning_2_loop
+		disablespeaker allies_compost_sound
+		disablespeaker axis_compost_sound
+		globalaccum 0 set 0			// uje_spanning_4 niet bezig
+		globalaccum 3 set 0			// dodenherdenking start-mechanisme
+		globalaccum 4 set 0			// credo is niet bezig
+
+		wm_set_round_timelimit 15
+
+		wm_axis_respawntime 20
+		wm_allied_respawntime 15
+
+		// charge times
+		setchargetimefactor 0 soldier		1
+		setchargetimefactor 0 medic		1
+		setchargetimefactor 0 engineer		1
+		setchargetimefactor 0 fieldops		1
+		setchargetimefactor 0 covertops		1
+
+		setchargetimefactor 1 soldier		1
+		setchargetimefactor 1 medic		1
+		setchargetimefactor 1 engineer		1
+		setchargetimefactor 1 fieldops		1
+		setchargetimefactor 1 covertops		1
+
+
+		// Stopwatch mode defending team (0=Axis, 1=Allies)
+		wm_set_defending_team 1
+
+		// If the round timer expires, the Allies have won, so set the current winning team (0=Axis, 1=Allies)
+		wm_setwinner 1
+
+		// spawnpoints
+		setautospawn "Memorial Plane" 0		// spawnpoint 0 voor axis
+		setautospawn "Boozaka Town" 1		// spawnpoint 1 voor allies
+
+
+		// objectives:
+		//	1: Axis steal the tank		/ Allies protect the tank
+		//	2: Axis steal 8 fuel-cans	/ Allies prevent the Axis from stealing the 8 fuel-cans
+		//	3: Build the command-post
+		//	4: Capture the flag at The Old Skool
+		//	5: Axis Build the bridge and escort the tank	/ Allies must prevent this
+		wm_number_of_objectives 5
+
+		// Objective overview status indicators
+		//wm_objective_status <objective> <team (0=Axis, 1=Allies)> <status (0=neutral 1=complete 2=failed)>
+		wm_objective_status 1 0 0
+		wm_objective_status 1 1 0
+		wm_objective_status 2 0 0
+		wm_objective_status 2 1 0
+		wm_objective_status 3 0 0
+		wm_objective_status 3 1 0
+		wm_objective_status 4 0 0
+		wm_objective_status 4 1 1
+		wm_objective_status 5 0 0
+		wm_objective_status 5 1 0
+
+		// current main objectives for each team
+		wm_set_main_objective	1	0
+		wm_set_main_objective	1	1
+
+		// we zijn niet bezig met objective 2
+		trigger self reset_objective2
+
+		//setdamagable <targetname> <status>
+		setdamagable tank 1
+
+		//======================================
+		//---- IN-GAME TEXT --------------------
+
+		//---- JOIN SOUND ----------------------
+		// remove:
+		//-- allies --
+		//--- axis ---
+
+		// add:
+		//--- axis ---
+		wm_addteamvoiceannounce 0 "uje_axis_steal_the_tank"
+		//-- allies --
+//		wm_addteamvoiceannounce 1 "uje_tank_protect"		// 1=allies, 0=axis
+//		wm_addteamvoiceannounce 1 "uje_construct_tankbarrier"
+
+		//---- IN-GAME SOUND -------------------
+		//--- axis ---
+		wm_teamvoiceannounce 0 "uje_axis_steal_the_tank"
+		//-- allies --
+//		wm_teamvoiceannounce 1 "uje_tank_protect"
+//		wm_teamvoiceannounce 1 "uje_construct_tankbarrier"
+		//======================================
+	}
+
+	trigger axis_win
+	{
+		resetscript
+		wm_announce "^5The Axis have reached Braboheim in time."
+
+		// Set the round winner:  (0=Axis, 1=Allies)
+		wm_setwinner 0
+
+		//fadeallsounds <up|down> <time>
+		fadeallsounds down 2000		// geluid uitschakelen
+		wait 2000
+		fadeallsounds up 1		// geluid aan, anders horen we later niets meer..
+
+		wm_endround
+	}
+
+	// allies win
+	trigger timelimit_hit
+	{
+		resetscript
+		wm_announce "^5The Allies have prevented the Axis from reaching Braboheim."
+
+		//fadeallsounds <up|down> <time>
+		fadeallsounds down 2000		// geluid uitschakelen
+		wait 2000
+		fadeallsounds up 1		// geluid aan, anders horen we later niets meer..
+	}
+
+	trigger objective_1_handler
+	{
+		wm_announce "^2Extra Mission-Time: +10 minutes"
+		wm_set_round_timelimit 25
+
+		// wm_objective_status <objective_number> <team> <objective_status>
+		wm_objective_status 1 0 1	// Axis hebben de tank gestolen
+		wm_objective_status 1 1 2	// Allies laten de tank stelen
+
+		// het licht op groen..
+		remapshader textures/UJE_00/sign_red textures/UJE_00/sign_green
+		remapshaderflush
+	}
+	trigger objective_2_handler
+	{
+		wm_announce "^2Extra Mission-Time: +10 minutes"
+		wm_set_round_timelimit 35
+
+		// wm_objective_status <objective_number> <team> <objective_status>
+		wm_objective_status 2 0 1	// Axis hebben 8 fuelcans gestolen
+		wm_objective_status 2 1 2	// Allies laten 8 fuelcans stelen
+	}
+	trigger objective_Spinner_handler
+	{
+		wm_announce "^5The Axis occupied Spinnertal."
+	}
+
+	trigger done_objective2
+	{
+
+		// het licht op groen..
+		remapshader textures/UJE_00/sign_red textures/UJE_00/sign_green
+//		wait 100
+		remapshaderflush
+
+		// we zijn klaar met objective 2
+		trigger self end_objective2
+
+		enablespeaker uje_spanning_3
+
+		// de tank mag verder rijden nu..op naar path_025
+		trigger tank run_continue
+	}
+
+	trigger reset_objective2
+	{
+		// de modellen voor het opslag-rek
+		trigger fuelcan_1 hide
+		trigger fuelcan_trans_1 hide
+		setstate fuelcan_1_clip invisible	//hide/invisible  ;)
+
+		trigger fuelcan_2 hide
+		trigger fuelcan_trans_2 hide
+		setstate fuelcan_2_clip invisible
+
+		trigger fuelcan_3 hide
+		trigger fuelcan_trans_3 hide
+		setstate fuelcan_3_clip invisible
+
+		trigger fuelcan_4 hide
+		trigger fuelcan_trans_4 hide
+		setstate fuelcan_4_clip invisible
+
+		trigger fuelcan_5 hide
+		trigger fuelcan_trans_5 hide
+		setstate fuelcan_5_clip invisible
+
+		trigger fuelcan_6 hide
+		trigger fuelcan_trans_6 hide
+		setstate fuelcan_6_clip invisible
+
+		trigger fuelcan_7 hide
+		trigger fuelcan_trans_7 hide
+		setstate fuelcan_7_clip invisible
+
+		trigger fuelcan_8 hide
+		trigger fuelcan_trans_8 hide
+		setstate fuelcan_8_clip invisible
+
+		// de misc_commandmap_marker's
+		setstate fuelcans_1_cm invisible
+		setstate fuelcans_2_cm invisible
+		setstate fuelcans_3_cm invisible
+
+		// de toi's
+		setstate fuelcans_1_toi invisible
+		setstate fuelcans_2_toi invisible
+		setstate fuelcans_3_toi invisible
+
+		// de team_CTF_flag's
+		setstate fuelcans_1 invisible
+		setstate fuelcans_2 invisible
+		setstate fuelcans_3 invisible
+
+		// de trigger_flagonly_multiple
+		setstate fuelcan_dropzone invisible
+
+		// de hekken van het spawnhokje
+		setstate fuelcans_1_gate default
+		setstate fuelcans_2_gate default
+		setstate fuelcans_3_gate default
+
+		// we zijn niet bezig met objective 2
+		trigger tank fuelcans_not_loading
+	}
+
+	trigger end_objective2
+	{
+		// de misc_commandmap_marker's
+		setstate fuelcans_1_cm invisible
+		setstate fuelcans_2_cm invisible
+		setstate fuelcans_3_cm invisible
+
+		// de toi's
+		setstate fuelcans_1_toi invisible
+		setstate fuelcans_2_toi invisible
+		setstate fuelcans_3_toi invisible
+
+		// de team_CTF_flag's
+		setstate fuelcans_1 invisible
+		setstate fuelcans_2 invisible
+		setstate fuelcans_3 invisible
+
+		// de trigger_flagonly_multiple
+		setstate fuelcan_dropzone invisible
+
+		// de hekken van het spawnhokje
+		setstate fuelcans_1_gate invisible
+		setstate fuelcans_2_gate invisible
+		setstate fuelcans_3_gate invisible
+
+		// we zijn niet bezig met objective 2
+		trigger tank fuelcans_not_loading
+	}
+
+	trigger start_objective2
+	{
+		// de modellen voor het opslag-rek
+		trigger fuelcan_1 hide
+		trigger fuelcan_trans_1 show
+		setstate fuelcan_1_clip invisible
+
+		trigger fuelcan_2 hide
+		trigger fuelcan_trans_2 show
+		setstate fuelcan_2_clip invisible
+
+		trigger fuelcan_3 hide
+		trigger fuelcan_trans_3 show
+		setstate fuelcan_3_clip invisible
+
+		trigger fuelcan_4 hide
+		trigger fuelcan_trans_4 show
+		setstate fuelcan_4_clip invisible
+
+		trigger fuelcan_5 hide
+		trigger fuelcan_trans_5 show
+		setstate fuelcan_5_clip invisible
+
+		trigger fuelcan_6 hide
+		trigger fuelcan_trans_6 show
+		setstate fuelcan_6_clip invisible
+
+		trigger fuelcan_7 hide
+		trigger fuelcan_trans_7 show
+		setstate fuelcan_7_clip invisible
+
+		trigger fuelcan_8 hide
+		trigger fuelcan_trans_8 show
+		setstate fuelcan_8_clip invisible
+
+		// de misc_commandmap_marker's
+		setstate fuelcans_1_cm default
+		setstate fuelcans_2_cm default
+		setstate fuelcans_3_cm default
+
+		// de toi's
+		setstate fuelcans_1_toi default
+		setstate fuelcans_2_toi default
+		setstate fuelcans_3_toi default
+
+		// de team_CTF_flag's
+		setstate fuelcans_1 default
+		setstate fuelcans_2 default
+		setstate fuelcans_3 default
+
+		// de trigger_flagonly_multiple
+		setstate fuelcan_dropzone default
+
+		// de hekken van het spawnhokje
+		setstate fuelcans_1_gate invisible
+		setstate fuelcans_2_gate invisible
+		setstate fuelcans_3_gate invisible
+
+		// het licht laten knipperen..
+		remapshader textures/UJE_00/sign_red textures/UJE_00/sign_flashing
+		remapshaderflush
+
+		// we zijn begonnen met objective 2
+		trigger tank fuelcans_loading
+	}
+
+
+	//--- speaker priority-handling
+	trigger enablespeaker_uje_spanning_4
+	{
+		globalaccum 0 set 1
+		disablespeaker uje_down
+		enablespeaker uje_spanning_4
+		wait 14300
+		//disablespeaker uje_spanning_4
+		globalaccum 0 set 0
+	}
+	trigger enablespeaker_uje_down
+	{
+		globalaccum 0 abort_if_equal 1
+		enablespeaker uje_down
+	}
+	//---
+
+
+	//--------------------------------------------
+	//--- 2 minutes of silence
+	trigger show_respect
+	{
+		// niet triggeren als niet alle 5 knoppen zijn gedrukt:
+		// bits 0,1,2,3+ 4 gezet = waarde 1+2+4+8+16 = 31
+		globalaccum 3 abort_if_not_equal 31
+
+		// extra controle tegen dubbel starten
+//		globalaccum 3 abort_if_greater_than 32
+		globalaccum 3 abort_if_bitset 6
+
+		// markeer bit 6 als: "ceremony is bezig"
+		globalaccum 3 bitset 6
+
+		wm_announce "^3The ceremony to honour the dead will begin"
+
+		// schakel credo uit als de ceremonie begint
+		trigger credo disable			// no new credo triggers from now..
+		disablespeaker uje_credo		// this does NOT work immediately ???!!..stops at end-of-sound (for non-loop sounds)
+
+		trigger self wait_for_end_of_credo	// evt. wachten totdat Credo klaar is (melding)
+
+		trigger self churchbells_8PM
+	}
+	trigger wait_for_end_of_credo
+	{
+		globalaccum 4 abort_if_equal 0
+		wm_announce "^3We have to wait until the choir has finished 'Credo'"
+//		globalaccum 4 wait_while_equal 1
+	}
+	trigger churchbells_8PM
+	{
+		globalaccum 4 wait_while_equal 1	// evt. wachten op credo
+
+		wm_announce "The time is 20:00 .. prepare for the ceremony"
+
+		// de kerkklok op 20:00 uur zetten
+		trigger stopwatch stop
+		trigger stopwatch reset
+		trigger stopwatch_minutes reset
+		trigger stopwatch_hours reset_8
+
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+		trigger self churchbell
+		wait 4000
+
+		trigger self the_last_post
+	}
+	trigger churchbell
+	{
+		disablespeaker uje_kerkklok
+		enablespeaker uje_kerkklok
+	}
+	trigger the_last_post
+	{
+		wm_announce "The Last Post.."
+
+		disablespeaker uje_thelastpost
+		enablespeaker uje_thelastpost
+		wait 72000
+
+		trigger self silence
+	}
+	trigger silence
+	{
+		wm_announce "2 minutes of silence.."
+
+		// 2 minute silence
+		fadeallsounds down 2000
+
+		// de kerkklok laten lopen
+		trigger stopwatch start
+
+		wait 60000
+		wm_announce "."
+		wait 60000
+
+		// de kerkklok stoppen
+//		trigger stopwatch stop
+
+		fadeallsounds up 2000
+		wait 4000
+
+		wm_announce "Now fire those salute shots soldiers!"
+
+		// schakel credo weer in
+		trigger credo enable
+
+		// markeer bit 6 als: "ceremony is afgelopen"
+		globalaccum 3 bitreset 6
+
+		trigger self salute_shooters
+	}
+	trigger salute_shooters
+	{
+		alertentity shooter0
+		wait 250
+		alertentity shooter1
+		wait 250
+		alertentity shooter2
+		wait 250
+		alertentity shooter3
+		wait 250
+		alertentity shooter4
+		wait 250
+		alertentity shooter5
+		wait 250
+		alertentity shooter6
+		wait 250
+		alertentity shooter7
+		wait 250
+		alertentity shooter0
+		wait 250
+		alertentity shooter1
+		wait 250
+		alertentity shooter2
+		wait 250
+		alertentity shooter3
+		wait 250
+		alertentity shooter4
+		wait 250
+		alertentity shooter5
+		wait 250
+		alertentity shooter6
+		wait 250
+		alertentity shooter7
+		wait 250
+		alertentity shooter0
+		wait 250
+		alertentity shooter1
+		wait 250
+		alertentity shooter2
+		wait 250
+		alertentity shooter3
+		wait 250
+		alertentity shooter4
+		wait 250
+		alertentity shooter5
+		wait 250
+		alertentity shooter6
+		wait 250
+		alertentity shooter7
+		wait 250
+
+		alertentity shooter0
+		alertentity shooter1
+		alertentity shooter2
+		alertentity shooter3
+		alertentity shooter4
+		alertentity shooter5
+		alertentity shooter6
+		alertentity shooter7
+	}
+	//--------------------------------------------
+}
+
+
+//=============================================================================
+//=== Spawnpoints
+//=============================================================================
+// De eerste Axis-spawn
+spawnpoint_0
+{
+	spawn
+	{
+		// de spawn is initieel zichtbaar op de map
+//		setstate spawnpoint_0 default
+	}
+
+	trigger kill
+	{
+		alertentity spawnpoint_0		//?
+		setstate spawnpoint_0 invisible
+		remove
+	}
+
+	trigger hide
+	{
+		setstate spawnpoint_0 invisible
+	}
+
+	trigger show_allied
+	{
+		setstate spawnpoint_0 default
+		alertentity spawnpoint_0	//command-map/vlag bijwerken
+	}
+}
+
+// de vlag in Boozaka_town
+flag_1
+{
+	spawn
+	{
+		// welk team heeft de vlag?
+		accum 0 set 1 //allies
+	}
+
+	trigger kill
+	{
+		remove
+	}
+
+	trigger axis_capture
+	{
+		// is de vlag al van de axis?
+		accum 0 abort_if_equal 0
+		accum 0 set 0 //axis
+
+		wm_announce "The Axis captured Boozaka Town."
+
+		alertentity spawnpoint_1	//command-map/vlag bijwerken
+		setautospawn "Boozaka Town" 0	//axis spawnen op de "Memorial Plane"
+		setautospawn "Spinnertal" 1	//allies spawnen in "Boozaka Town"
+
+		enablespeaker uje_bold
+	}
+
+	trigger allied_capture
+	{
+		// is de vlag al van de allies?
+		accum 0 abort_if_equal 1
+		accum 0 set 1 //allies
+
+		wm_announce "The Allies captured Boozaka Town."
+
+		alertentity spawnpoint_1	//command-map/vlag bijwerken
+		setautospawn "Memorial Plane" 0
+		setautospawn "Boozaka Town" 1
+
+		enablespeaker uje_bold
+	}
+	trigger force_axis
+	{
+		wm_announce "^5The Axis occupied Boozaka Town."
+
+		// de eerste axis-spawns gaan nu tijdelijk verdwijnen..
+		trigger spawnpoint_0 hide
+
+		// is de vlag al van de axis?
+		accum 0 abort_if_equal 0
+		accum 0 set 0 //axis
+
+		alertentity spawnpoint_1	//command-map/vlag bijwerken
+		alertentity spawn_1		//spawns wisselen
+		setautospawn "Boozaka Town" 0
+		setautospawn "Spinnertal" 1
+
+//		// vlag verwijderen
+//		trigger self kill
+	}
+}
+
+//de spawn in Spinnertal
+spawnpoint_2
+{
+	trigger force_axis
+	{
+		trigger game_manager objective_Spinner_handler
+
+		// allies spawn 4 wordt nu zichtbaar..
+		trigger spawnpoint_4 show
+		// .. evenals spawnpoint_0
+		trigger spawnpoint_0 show_allied
+
+		alertentity spawnpoint_2	//command-map/vlag bijwerken
+		alertentity spawn_2		//spawns wisselen
+		setautospawn "Spinnertal" 0
+		setautospawn "Braboheim" 1	//spawns 4
+	}
+}
+
+// de vlag in de Old Skool
+flag_3
+{
+	spawn
+	{
+		// welk team heeft de vlag?
+		accum 0 set 1 //allies
+	}
+
+	trigger axis_capture
+	{
+		// is de vlag al van de axis?
+		accum 0 abort_if_equal 0
+		accum 0 set 0 //axis
+
+		wm_announce "The Axis captured the Old Skool."
+
+		alertentity spawnpoint_3	//command-map/vlag bijwerken
+
+		wm_objective_status 4 0 1	// Axis in bezit van de Old Skool
+		wm_objective_status 4 1 0
+
+		enablespeaker uje_bold
+	}
+
+	trigger allied_capture
+	{
+		// is de vlag al van de allies?
+		accum 0 abort_if_equal 1
+		accum 0 set 1 //allies
+
+		wm_announce "The Allies captured the Old Skool."
+
+		alertentity spawnpoint_3	//command-map/vlag bijwerken
+
+		wm_objective_status 4 0 0	// Allies in bezit van de Old Skool
+		wm_objective_status 4 1 1
+
+		enablespeaker uje_bold
+	}
+}
+
+// Laatste Allied spawnpoint in de kerk
+spawnpoint_4
+{
+	spawn
+	{
+		// de spawn is initieel niet zichtbaar op de map
+		setstate spawnpoint_4 invisible
+	}
+
+	trigger show
+	{
+		setstate spawnpoint_4 default
+	}
+}
+
+//=============================================================================
+//=== Fuelcans
+//=============================================================================
+// het gebied om jerrycans in te leveren
+// accum 0: aantal ontvangen jerrycans
+fuelcan_dropzone
+{
+	spawn
+	{
+		accum 0 set 0
+		wait 1000
+//		trigger game_manager reset_objective2
+	}
+	death
+	{
+		// er is een jerrycan afgeleverd door de Axis
+		accum 0 inc 1
+
+		trigger self can_1
+		trigger self can_2
+		trigger self can_3
+		trigger self can_4
+		trigger self can_5
+		trigger self can_6
+		trigger self can_7
+		trigger self can_8
+	}
+
+	trigger secured_sound_1
+	{
+		disablespeaker uje_aanvalluh_1
+		enablespeaker uje_aanvalluh_1
+		wait 2800
+		disablespeaker uje_aanvalluh_1
+	}
+//	trigger secured_sound_2
+//	{
+//		disablespeaker uje_aanvalluh_2
+//		enablespeaker uje_aanvalluh_2
+//		wait 2800
+//		disablespeaker uje_aanvalluh_2
+//	}
+
+	trigger can_1
+	{
+		accum 0 abort_if_not_equal 1
+
+		// jerrycans dropzone modellen bijwerken
+		trigger fuelcan_1 show
+		trigger fuelcan_trans_1 hide
+		setstate fuelcan_1_clip default
+
+		wm_announce "^5The Axis have delivered 1 fuelcan."
+		trigger self secured_sound_1
+	}
+	trigger can_2
+	{
+		accum 0 abort_if_not_equal 2
+
+		trigger fuelcan_2 show
+		trigger fuelcan_trans_2 hide
+		setstate fuelcan_2_clip default
+
+		wm_announce "^5The Axis have delivered 2 fuelcans."
+		trigger self secured_sound_1
+	}
+	trigger can_3
+	{
+		accum 0 abort_if_not_equal 3
+
+		trigger fuelcan_3 show
+		trigger fuelcan_trans_3 hide
+		setstate fuelcan_3_clip default
+
+		wm_announce "^5The Axis have delivered 3 fuelcans."
+		trigger self secured_sound_1
+	}
+	trigger can_4
+	{
+		accum 0 abort_if_not_equal 4
+
+		trigger fuelcan_4 show
+		trigger fuelcan_trans_4 hide
+		setstate fuelcan_4_clip default
+
+		wm_announce "^5The Axis have delivered 4 fuelcans."
+		trigger self secured_sound_1
+	}
+	trigger can_5
+	{
+		accum 0 abort_if_not_equal 5
+
+		trigger fuelcan_5 show
+		trigger fuelcan_trans_5 hide
+		setstate fuelcan_5_clip default
+
+		wm_announce "^5The Axis have delivered 5 fuelcans."
+		trigger self secured_sound_1
+	}
+	trigger can_6
+	{
+		accum 0 abort_if_not_equal 6
+
+		trigger fuelcan_6 show
+		trigger fuelcan_trans_6 hide
+		setstate fuelcan_6_clip default
+
+		wm_announce "^5The Axis have delivered 6 fuelcans."
+		trigger self secured_sound_1
+	}
+	trigger can_7
+	{
+		accum 0 abort_if_not_equal 7
+
+		trigger fuelcan_7 show
+		trigger fuelcan_trans_7 hide
+		setstate fuelcan_7_clip default
+
+		wm_announce "^5The Axis have delivered 7 fuelcans."
+		trigger self secured_sound_1
+	}
+	trigger can_8
+	{
+		accum 0 abort_if_not_equal 8
+
+		trigger fuelcan_8 show
+		trigger fuelcan_trans_8 hide
+		setstate fuelcan_8_clip default
+
+		wm_announce "^5The Axis have delivered all 8 fuelcans."
+//		trigger self secured_sound_2
+
+		disablespeaker uje_aanvalluh_2
+		enablespeaker uje_aanvalluh_2
+		wait 2800
+		disablespeaker uje_aanvalluh_2
+
+		trigger game_manager objective_2_handler
+
+		trigger self fuel_the_tank
+	}
+
+
+
+	// de tank "vullen met fuel" van de jerrycans
+	trigger fuel_the_tank
+	{
+		wm_announce "Refueling the tank..."
+
+		wait 6000
+
+		trigger fuelcan_8 hide
+		setstate fuelcan_8_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_7 hide
+		setstate fuelcan_7_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_6 hide
+		setstate fuelcan_6_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_5 hide
+		setstate fuelcan_5_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_4 hide
+		setstate fuelcan_4_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_3 hide
+		setstate fuelcan_3_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_2 hide
+		setstate fuelcan_2_clip invisible
+		enablespeaker uje_suspense
+
+		wait 6000
+
+		trigger fuelcan_1 hide
+		setstate fuelcan_1_clip invisible
+		enablespeaker uje_suspense
+
+		// de tank mag weer rijden..
+		trigger game_manager done_objective2
+	}
+}
+
+// de jerrycans die zijn ingeleverd (modellen)
+fuelcan_1
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_1 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_1 invisible
+	}
+}
+fuelcan_2
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_2 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_2 invisible
+	}
+}
+fuelcan_3
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_3 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_3 invisible
+	}
+}
+fuelcan_4
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_4 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_4 invisible
+	}
+}
+fuelcan_5
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_5 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_5 invisible
+	}
+}
+fuelcan_6
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_6 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_6 invisible
+	}
+}
+fuelcan_7
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_7 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_7 invisible
+	}
+}
+fuelcan_8
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_8 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_8 invisible
+	}
+}
+
+// de jerrycans die nog moeten worden ingeleverd (rode transparante modellen)
+fuelcan_trans_1
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_1 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_1 invisible
+	}
+}
+fuelcan_trans_2
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_2 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_2 invisible
+	}
+}
+fuelcan_trans_3
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_3 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_3 invisible
+	}
+}
+fuelcan_trans_4
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_4 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_4 invisible
+	}
+}
+fuelcan_trans_5
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_5 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_5 invisible
+	}
+}
+fuelcan_trans_6
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_6 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_6 invisible
+	}
+}
+fuelcan_trans_7
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_7 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_7 invisible
+	}
+}
+fuelcan_trans_8
+{
+	spawn
+	{
+		wait 500
+		trigger self hide
+	}
+
+	trigger show
+	{
+		setstate fuelcan_trans_8 default
+	}
+
+	trigger hide
+	{
+		setstate fuelcan_trans_8 invisible
+	}
+}
+
+// de jerrycan-spawnpoints verspreidt over de map
+fuelcans_1
+{
+	spawn
+	{
+		// het aantal gestolen jerrycans van dit station: max = 3
+		accum 0 set 0
+		wait 500
+		setstate fuelcans_1 invisible
+	}
+
+	trigger stolen
+	{
+		accum 0 inc 1
+		enablespeaker uje_spanning_1
+	}
+
+	trigger dropped
+	{
+		enablespeaker uje_spanning_6
+	}
+
+	trigger captured //secured
+	{
+		accum 0 abort_if_less_than 3		// nog niet allemaal gestolen (en ingeleverd)??
+		setstate fuelcans_1_cm invisible
+		setstate fuelcans_1_toi invisible
+		setstate fuelcans_1 invisible
+	}
+
+	trigger returned
+	{
+		accum 0 inc -1
+
+		enablespeaker uje_suspense
+	}
+}
+fuelcans_2
+{
+	spawn
+	{
+		// het aantal gestolen jerrycans van dit station: max = 2
+		accum 0 set 0
+		wait 500
+		setstate fuelcans_2 invisible
+	}
+
+	trigger stolen
+	{
+		accum 0 inc 1
+		enablespeaker uje_spanning_1
+	}
+
+	trigger dropped
+	{
+		enablespeaker uje_spanning_6
+	}
+
+	trigger captured //secured
+	{
+		accum 0 abort_if_less_than 2		// nog niet allemaal gestolen??
+		setstate fuelcans_2_cm invisible
+		setstate fuelcans_2_toi invisible
+		setstate fuelcans_2 invisible
+	}
+
+	trigger returned
+	{
+		accum 0 inc -1
+
+		enablespeaker uje_suspense
+	}
+}
+fuelcans_3
+{
+	spawn
+	{
+		// het aantal gestolen jerrycans van dit station: max = 3
+		accum 0 set 0
+		wait 500
+		setstate fuelcans_3 invisible
+	}
+
+	trigger stolen
+	{
+		accum 0 inc 1
+		enablespeaker uje_spanning_1
+	}
+
+	trigger dropped
+	{
+		enablespeaker uje_spanning_6
+	}
+
+	trigger captured //secured
+	{
+		accum 0 abort_if_less_than 3		// nog niet allemaal gestolen??
+		setstate fuelcans_3_cm invisible
+		setstate fuelcans_3_toi invisible
+		setstate fuelcans_3 invisible
+	}
+
+	trigger returned
+	{
+		accum 0 inc -1
+
+		enablespeaker uje_suspense
+	}
+}
+
+
+
+//=============================================================================
+//=== Tank
+//=============================================================================
+
+// MyTank
+//	accum 0, script lock / ref counter
+//	accum 1, current movement path position
+//	accum 2, track state
+//	accum 3, bit 0	death status		(0=dead, 1=alive)
+//		 bit 1	stuck status		(0=not stuck, 1=stuck)
+//		 bit 2	players nearby		(0=no players, 1=players)
+//		 bit 3	moving status		(0=not moving, 1=moving)
+//		 bit 4	temp register
+//		 bit 5	message-flag		(0=no message, 1=message)
+//		 bit 6	visible state		(0=alive, 1=dead)
+//		 bit 7	barricade #1		(0=not built, 1=built)
+//		 bit 8	bridge #1		(0=not built, 1=built)
+//		 bit 9	loading fuelcans	(0=not loading, 1=loading)
+//		 bit 10	tank MG mounted		(0=no player, 1=player)
+//	accum 4, stop counter
+//	accum 5, short/long route		(0=short, 1=long)		// no bit? :P
+//
+
+//info_notnull
+tank_sound
+{
+	trigger start
+	{
+		trigger tank sound_start
+		wait 3400
+		trigger tank sound_move
+	}
+
+	trigger stop
+	{
+		trigger tank sound_stop
+		wait 1400
+		trigger tank sound_idle
+	}
+
+	trigger death
+	{
+		trigger tank sound_death
+		wait 3400
+		trigger tank sound_idle
+	}
+
+	trigger rebirth
+	{
+		trigger tank sound_rebirth
+		wait 3400
+		trigger tank sound_idle
+	}
+}
+
+//script_mover
+tank
+{
+	// ===========================================================================================
+	spawn
+	{
+		wait 50
+
+		constructible_chargebarreq 1.0
+		constructible_constructxpbonus 10
+		constructible_destructxpbonus 10
+//		constructible_health 4
+//		constructible_weaponclass 1
+
+		followspline 0 path_000 10000 wait length -64
+
+		// stoplicht op rood
+		remapshader "textures/UJE_00/sign_red" "textures/UJE_00/sign_red"
+		// waarschuwingslichten op wit
+		remapshader "textures/UJE_00/sign_red_nolight" "textures/UJE_00/sign_white_nolight"
+//		wait 100
+		remapshaderflush
+
+		trigger self sound_idle
+		trigger self tracks_stop
+		trigger self barricade1_destroyed
+		accum 5 set 0				//tank neemt standaard de korte route
+		accum 3 bitreset 10			//geen enkele speler bezet de tank-MG
+		trigger self fuelcans_not_loading	//niet bezig met objective 2 (fuelcans laden)
+
+		// de tank kan niet schieten, geen munitie:
+		// pas op path_024 krijgt de tank munitie
+		//settankammo <targetname> <amount>
+//		settankammo tank 0			//ik zie geen tank-HP meer!! :-o
+
+		// spelers mogen de tank's MG gebruiken
+		allowtankenter yes
+		allowtankexit yes
+	}
+
+
+	// ===========================================================================================
+	// script lockouts
+	trigger script_lock
+	{
+		accum 0 inc 1
+	}
+
+	trigger script_unlock
+	{
+		accum 0 inc -1
+	}
+
+
+	// ===========================================================================================
+	// MG
+	mg42 mount
+	{
+		accum 3 bitset 10	//een speler bezet de tank-MG
+		trigger self mg_light_red
+	}
+
+	mg42 unmount
+	{
+		accum 3 bitreset 10	//geen enkele speler bezet de tank-MG
+		trigger self mg_light_white
+	}
+
+	trigger mg_light_white
+	{
+		accum 3 abort_if_bitset 10	// MG in gebruik
+		remapshader "textures/UJE_00/sign_red_nolight" "textures/UJE_00/sign_white_nolight"
+		remapshaderflush
+	}
+
+	trigger mg_light_red
+	{
+		accum 3 abort_if_not_bitset 10	// MG niet in gebruik
+		remapshader "textures/UJE_00/sign_red_nolight" "textures/UJE_00/sign_red_nolight"
+		remapshaderflush
+	}
+
+
+	// ===========================================================================================
+	// tracks
+	trigger tracks_forward
+	{
+		accum 2 abort_if_equal 1
+		accum 2 set 1
+
+		remapshader models/mapobjects/tanks_sd/bits_r models/mapobjects/tanks_sd/bits_forward
+		remapshader models/mapobjects/tanks_sd/wheel_r models/mapobjects/tanks_sd/wheel_forward
+		remapshader models/mapobjects/tanks_sd/bits_l models/mapobjects/tanks_sd/bits_forward
+		remapshader models/mapobjects/tanks_sd/wheel_l models/mapobjects/tanks_sd/wheel_forward
+		remapshaderflush
+	}
+
+	trigger tracks_stop
+	{
+		accum 2 abort_if_equal 0
+		accum 2 set 0
+
+		remapshader models/mapobjects/tanks_sd/bits_r models/mapobjects/tanks_sd/bits_r
+		remapshader models/mapobjects/tanks_sd/wheel_r models/mapobjects/tanks_sd/wheel_r
+		remapshader models/mapobjects/tanks_sd/bits_l models/mapobjects/tanks_sd/bits_l
+		remapshader models/mapobjects/tanks_sd/wheel_l models/mapobjects/tanks_sd/wheel_l
+		remapshaderflush
+	}
+
+	trigger tracks_turn_left
+	{
+		accum 2 abort_if_equal 2
+		accum 2 set 2
+
+		remapshader models/mapobjects/tanks_sd/bits_r models/mapobjects/tanks_sd/bits_forward
+		remapshader models/mapobjects/tanks_sd/wheel_r models/mapobjects/tanks_sd/wheel_forward
+		remapshader models/mapobjects/tanks_sd/bits_l models/mapobjects/tanks_sd/bits_backward
+		remapshader models/mapobjects/tanks_sd/wheel_l models/mapobjects/tanks_sd/wheel_backward
+		remapshaderflush
+	}
+
+	trigger tracks_turn_right
+	{
+		accum 2 abort_if_equal 3
+		accum 2 set 3
+
+		remapshader models/mapobjects/tanks_sd/bits_r models/mapobjects/tanks_sd/bits_backward
+		remapshader models/mapobjects/tanks_sd/wheel_r models/mapobjects/tanks_sd/wheel_backward
+		remapshader models/mapobjects/tanks_sd/bits_l models/mapobjects/tanks_sd/bits_forward
+		remapshader models/mapobjects/tanks_sd/wheel_l models/mapobjects/tanks_sd/wheel_forward
+		remapshaderflush
+	}
+
+
+	// ========================================
+	// sound stuff
+	trigger sound_idle
+	{
+		stopsound
+		playsound sound/vehicles/tank/tank_idle.wav looping volume 512
+	}
+
+	trigger sound_start
+	{
+		stopsound
+		playsound sound/vehicles/tank/tank_revup.wav volume 196
+	}
+
+	trigger sound_move
+	{
+		stopsound
+		playsound sound/vehicles/tank/tank_move.wav looping volume 512
+	}
+
+	trigger sound_stop
+	{
+		stopsound
+		playsound sound/vehicles/tank/tank_revdown.wav volume 196
+	}
+
+	trigger sound_death
+	{
+		stopsound
+		playsound sound/vehicles/tank/tank_stop.wav volume 256
+	}
+
+	trigger sound_rebirth
+	{
+		stopsound
+		playsound sound/vehicles/tank/tank_start.wav volume 196
+	}
+
+
+	// ===========================================================================================
+	// enable/disable
+	trigger tank_enable
+	{
+		trigger self stuck_check
+		accum 3 abort_if_bitset 1 		// stuck check
+		accum 4 set 0				// reset stop counter
+		accum 3 bitreset 2			// reset player check
+		accum 3 abort_if_bitset 3 		// already following spline
+		accum 0 abort_if_not_equal 0		// are we not in a script lockout?
+		accum 3 abort_if_bitset 0 		// death check
+
+		trigger self script_lock
+
+		trigger tank_sound start
+
+		startanimation 55 10 15 nolerp norandom
+		wait 666
+		startanimation 5 40 15 nolerp norandom
+		wait 500
+		trigger self tracks_forward
+
+//		wm_announce "The Axis have stolen the tank"
+//		//---- IN-GAME SOUND -------------------
+//		//-- allies --
+//		//-- axis --
+//		wm_teamvoiceannounce 0 "uje_weve_stolen_tank"
+
+		trigger self script_unlock
+
+		//korte of lange route?
+		accum 5 trigger_if_equal 0 tank move
+		accum 5 trigger_if_equal 1 tank move_long
+
+	}
+
+	trigger tank_disable
+	{
+		accum 4 inc 1				// up the stop counter
+		accum 4 abort_if_less_than 2		// 2 second ride
+
+		accum 3 bitset 2			// set player check
+
+		trigger self deathcheck
+	}
+
+
+	// ===========================================================================================
+	// stuck checking
+	trigger stuck_check
+	{
+		accum 3 bitreset 1			// accum 3, bit 1	stuck status	(0=not stuck, 1=stuck)
+
+		trigger self stuck_check_scriptlockout
+		trigger self stuck_check_fuelcans_loading
+		trigger self stuck_check_barrier1_built
+		trigger self stuck_check_bridge1_built
+//		trigger self stuck_check_finished
+	}
+
+	trigger stuck_check_barrier1_built
+	{
+		accum 5 abort_if_equal 1		// lange route genomen? dan niet stoppen voor de barricade
+		accum 1 abort_if_not_equal 34		// niet op path 34? (net voorbij path_split op korte pad) dan sowieso doorrijden..
+		accum 3 abort_if_not_bitset 7		// barricade #1 niet gebouwd?
+		accum 3 bitset 1			// stuck
+	}
+
+	trigger stuck_check_fuelcans_loading
+	{
+		accum 3 abort_if_not_bitset 9		// zijn we niet bezig met objective 2??
+		accum 3 bitset 1			// stuck
+	}	
+
+	trigger stuck_check_bridge1_built
+	{
+		accum 5 abort_if_equal 1		// tank nu nog bezig aan de lange route?
+		accum 1 abort_if_less_than 51		// nog niet op path 51? (net voor de brug) dan sowieso doorrijden..
+		accum 1 abort_if_greater_than 58	// al voorbij aan path 58? (net over de brug) dan sowieso doorrijden..
+		accum 3 abort_if_bitset 8		// brug gebouwd?
+		accum 3 bitset 1			// stuck
+	}
+
+	trigger stuck_check_scriptlockout
+	{
+		accum 0 abort_if_equal 0
+		accum 3 bitset 1
+	}
+
+	trigger stuck_check_finished
+	{
+		accum 1 abort_if_less_than 78		// path_000 t/m path_078
+		accum 3 bitset 1
+	}
+
+
+	// ===========================================================================================
+	// stop check
+	trigger stopcheck_setup
+	{
+		accum 3 bitset 4			// stop if we're stuck/no-one's pushing :)
+
+		accum 3 abort_if_bitset 2		// no one in the trigger, abort
+
+		trigger self stuck_check		// call the stop check function
+		accum 3 abort_if_bitset 1		// we're stuck so break out
+
+		accum 3 bitreset 4			// we're free to move
+	}
+
+	trigger stopcheck
+	{
+		trigger self stopcheck_setup
+		accum 3 abort_if_not_bitset 4
+
+		trigger self script_lock
+
+		// Any just stopped moving stuff goes here
+		trigger tank_sound stop
+		trigger self tracks_stop
+		startanimation 45 10 15 nolerp norandom
+		wait 666
+		startanimation 0 1 15 nolerp norandom
+		wait 900
+
+		trigger self script_unlock
+		resetscript
+	}
+
+
+	// ===========================================================================================
+	// death / rebirth
+	trigger deathcheck
+	{
+		accum 3 abort_if_not_bitset 0		// are we dead?
+		accum 3 abort_if_bitset 6		// are we not already visibly dead?
+		accum 3 abort_if_bitset 3		// are we not following a spline?
+		accum 0 abort_if_not_equal 0		// are we not in a script lockout?
+
+		accum 3 bitset 6			// we're now visibly dead
+
+		accum 3 bitset 5
+
+		wm_announce "The Tank has been damaged"
+
+		changemodel models/mapobjects/tanks_sd/churchhill_broken.md3
+
+		setstate tank_smoke default
+
+		kill tank_construct
+
+		trigger self sound_death
+		trigger self tracks_stop
+
+		trigger self script_lock
+
+		trigger self tracks_stop
+		startanimation 45 10 15 nolerp norandom
+		wait 666
+		startanimation 0 1 15 nolerp norandom
+
+		trigger self script_unlock
+
+		resetscript
+	}
+
+	rebirth
+	{
+		accum 3 bitreset 6 			// we're visibly alive
+		accum 3 bitreset 0 			// we're alive again
+
+//		wm_announce "The Tank has been repaired"
+
+		trigger self script_lock
+
+		changemodel models/mapobjects/tanks_sd/churchhill.md3
+
+		setstate tank_smoke invisible
+
+		trigger tank_sound rebirth
+		wait 500
+
+		trigger self script_unlock
+
+		enablespeaker uje_suspense
+	}
+
+	death
+	{
+		accum 3 bitset 0
+
+		enablespeaker uje_suspense
+	}
+
+
+
+	// ===========================================================================================
+	// movement
+	trigger run_continue
+	{
+		accum 1 inc 1
+		trigger self deathcheck
+		trigger self stopcheck
+		trigger self move
+	}
+
+	trigger move
+	{
+		trigger self move_check
+		wait 500
+		trigger self move
+	}
+
+	trigger move_check
+	{
+		trigger self stuck_check
+		accum 3 abort_if_bitset 1
+
+		// List of waypoints to go to
+		accum 1 trigger_if_equal 0 tank move_to_000
+		accum 1 trigger_if_equal 1 tank move_to_001
+		accum 1 trigger_if_equal 2 tank move_to_002
+		accum 1 trigger_if_equal 3 tank move_to_003
+		accum 1 trigger_if_equal 4 tank move_to_004
+		accum 1 trigger_if_equal 5 tank move_to_005
+		accum 1 trigger_if_equal 6 tank move_to_006
+		accum 1 trigger_if_equal 7 tank move_to_007
+		accum 1 trigger_if_equal 8 tank move_to_008
+		accum 1 trigger_if_equal 9 tank move_to_009
+		accum 1 trigger_if_equal 10 tank move_to_010
+		accum 1 trigger_if_equal 11 tank move_to_011
+		accum 1 trigger_if_equal 12 tank move_to_012
+		accum 1 trigger_if_equal 13 tank move_to_013
+		accum 1 trigger_if_equal 14 tank move_to_014
+		accum 1 trigger_if_equal 15 tank move_to_015
+		accum 1 trigger_if_equal 16 tank move_to_016
+		accum 1 trigger_if_equal 17 tank move_to_017
+		accum 1 trigger_if_equal 18 tank move_to_018
+		accum 1 trigger_if_equal 19 tank move_to_019
+		accum 1 trigger_if_equal 20 tank move_to_020
+		accum 1 trigger_if_equal 21 tank move_to_021
+		accum 1 trigger_if_equal 22 tank move_to_022
+		accum 1 trigger_if_equal 23 tank move_to_023
+		accum 1 trigger_if_equal 24 tank move_to_024
+		accum 1 trigger_if_equal 25 tank move_to_025
+		accum 1 trigger_if_equal 26 tank move_to_026
+		accum 1 trigger_if_equal 27 tank move_to_027
+		accum 1 trigger_if_equal 28 tank move_to_028
+		accum 1 trigger_if_equal 29 tank move_to_029
+		accum 1 trigger_if_equal 30 tank move_to_030
+
+		// route splitsing
+		accum 1 trigger_if_equal 31 tank move_to_031
+		accum 1 trigger_if_equal 32 tank move_to_032
+
+		// korte route
+		accum 1 trigger_if_equal 33 tank move_to_033
+		accum 1 trigger_if_equal 34 tank move_to_034
+		accum 1 trigger_if_equal 35 tank move_to_035
+		accum 1 trigger_if_equal 36 tank move_to_036
+		accum 1 trigger_if_equal 37 tank move_to_037
+		accum 1 trigger_if_equal 38 tank move_to_038
+		accum 1 trigger_if_equal 39 tank move_to_039
+		accum 1 trigger_if_equal 40 tank move_to_040
+		accum 1 trigger_if_equal 41 tank move_to_041
+
+		accum 1 trigger_if_equal 42 tank move_to_042
+		accum 1 trigger_if_equal 43 tank move_to_043
+		accum 1 trigger_if_equal 44 tank move_to_044
+		accum 1 trigger_if_equal 45 tank move_to_045
+		accum 1 trigger_if_equal 46 tank move_to_046
+		accum 1 trigger_if_equal 47 tank move_to_047
+		accum 1 trigger_if_equal 48 tank move_to_048
+		accum 1 trigger_if_equal 49 tank move_to_049
+		accum 1 trigger_if_equal 50 tank move_to_050
+		accum 1 trigger_if_equal 51 tank move_to_051
+		accum 1 trigger_if_equal 52 tank move_to_052
+		accum 1 trigger_if_equal 53 tank move_to_053
+		accum 1 trigger_if_equal 54 tank move_to_054
+		accum 1 trigger_if_equal 55 tank move_to_055
+		accum 1 trigger_if_equal 56 tank move_to_056
+		accum 1 trigger_if_equal 57 tank move_to_057
+		accum 1 trigger_if_equal 58 tank move_to_058
+		accum 1 trigger_if_equal 59 tank move_to_059
+		accum 1 trigger_if_equal 60 tank move_to_060
+		accum 1 trigger_if_equal 61 tank move_to_061
+		accum 1 trigger_if_equal 62 tank move_to_062
+		accum 1 trigger_if_equal 63 tank move_to_063
+		accum 1 trigger_if_equal 64 tank move_to_064
+		accum 1 trigger_if_equal 65 tank move_to_065
+		accum 1 trigger_if_equal 66 tank move_to_066
+		accum 1 trigger_if_equal 67 tank move_to_067
+		accum 1 trigger_if_equal 68 tank move_to_068
+		accum 1 trigger_if_equal 69 tank move_to_069
+		accum 1 trigger_if_equal 70 tank move_to_070
+		accum 1 trigger_if_equal 71 tank move_to_071
+		accum 1 trigger_if_equal 72 tank move_to_072
+		accum 1 trigger_if_equal 73 tank move_to_073
+		accum 1 trigger_if_equal 74 tank move_to_074
+		accum 1 trigger_if_equal 75 tank move_to_075
+		accum 1 trigger_if_equal 76 tank move_to_076
+		accum 1 trigger_if_equal 77 tank move_to_077
+		accum 1 trigger_if_equal 78 tank move_to_078
+	}
+
+	// Move to waypoint 000
+	trigger move_to_000
+	{
+//		trigger self tracks_forward
+//		accum 3 bitset 3			// Mark as moving
+//		//followspline <direction 0(forward)|1(backward)> <splinename> <speed> [length <turningcircle>][wait]
+//		followspline 0 path_000 50 wait length -64
+//		accum 3 bitreset 3			// Mark as not moving
+		trigger self run_continue
+	}
+
+	trigger move_to_001
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_001 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_002
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_002 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_003
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_003 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_004
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_004 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_005
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_005 50 wait length -64
+		followspline 0 path_006 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_006
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+//		followspline 0 path_006 50 wait length -64
+		followspline 0 path_006a 50 wait length -64
+		accum 3 bitreset 3
+
+//		trigger self script_lock
+
+		// spelers mogen nu niet de tank op/af
+		allowtankenter no
+		allowtankexit no
+		trigger turret_lock run //sound
+
+		// limbo menu objectives bijwerken
+		trigger game_manager objective_1_handler
+
+		// de tank is voorbij Boozaka Town, spawnpoint_1 wordt blijvend voor de axis
+		trigger flag_1 force_axis
+		// vlag verwijderen
+		trigger flag_1 kill
+
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 0 "uje_axis_tank_is_in_tunnels"
+//		wm_teamvoiceannounce 1 "uje_axis_tank_is_in_tunnels"
+		// *----------------------------------- vo ------------------------------------------*
+
+//		trigger self script_unlock
+
+		trigger self run_continue
+	}
+
+	//------------------------------------------------------------------------
+	// de tank gaat de tunnel in
+	trigger move_to_007
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_007 80 wait length -64
+		accum 3 bitreset 3
+
+		// geluid van inslaande bom laten horen
+		trigger falling_bomb run
+		// en de grond laten schudden.
+		alertentity quake
+
+		trigger self run_continue
+	}
+
+	trigger move_to_008
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_008 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_009
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_009 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	//------------------------------------------------------------------------
+	trigger move_to_010
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_010 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_011
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_011 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_012
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_012 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_013
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_013 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_014
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_014 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_015
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_015 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_016
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_016 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	//------------------------------------------------------------------------
+	trigger move_to_017
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_017 40 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_018
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_018 40 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_019
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_019 40 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_020
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_020 40 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_021
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_021 40 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	//------------------------------------------------------------------------
+	trigger move_to_022
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_022 50 wait length -64
+		accum 3 bitreset 3
+
+//		trigger self script_lock
+
+		// spelers mogen nu weer de tank's MG gebruiken
+		allowtankenter yes
+		allowtankexit yes
+		trigger turret_unlock run //sound
+
+
+		// het licht op rood..
+		remapshader textures/UJE_00/sign_red textures/UJE_00/sign_red
+		remapshaderflush
+
+//		trigger self script_unlock
+
+		trigger self run_continue
+	}
+
+	trigger move_to_023
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_023 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	//------------------------------------------------------------------------
+	trigger move_to_024
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_024 50 wait length -64
+		accum 3 bitreset 3
+
+		// wacht 30 seconden, om munitie te laden..
+		trigger self script_lock
+
+		wm_announce "The tank is loading ammo."
+		trigger self tracks_stop
+		trigger tank_sound stop
+
+		enablespeaker uje_spanning_3
+		wait 30000
+
+//		settankammo tank 20000
+		wm_announce "The ammo has been loaded."
+//		wm_announce "^5The tank now needs 8 cans of fuel."
+		// wm_announce_icon <icon_number> <text>
+		wm_announce_icon 5 "^5The tank now needs 8 cans of fuel."
+
+		enablespeaker uje_spanning_3
+
+		trigger self script_unlock
+
+		// start objective 2: jerrycans halen
+		trigger game_manager start_objective2
+
+//		trigger self run_continue
+	}
+
+	trigger move_to_025
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_025 64 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_026
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_026 64 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_027
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_027 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_028
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_028 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_029
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_029 80 wait length -64 roll 0 1 dampin
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_030
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_030 64 wait length -64
+		accum 3 bitreset 3
+
+		// de tank heeft de brandstof ontvangen, en rijdt alweer. spawnpoint_2 wordt blijvend voor de axis
+		trigger spawnpoint_2 force_axis
+
+		trigger self run_continue
+	}
+
+
+	//--------------------------------
+	// path_032/path_032_long is de route splitsing
+	trigger move_to_031
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_031 50 wait length -64 roll 1 0 dampout
+		accum 3 bitreset 3
+
+		// test of de tank de lange route moet nemen..
+		trigger self check_long_route_start
+		// korte of lange route nemen..
+		accum 5 trigger_if_equal 0 tank run_continue
+		accum 5 trigger_if_equal 1 tank run_continue_long
+	}
+
+	trigger move_to_032
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3 //moving
+		followspline 0 path_032 50 wait length -64
+		accum 3 bitreset 3 //not moving
+		trigger self run_continue
+	}
+	//--------------------------------
+
+
+
+	//--------------------------------
+	// short route
+	trigger move_to_033
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_033 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_034
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_034 80 wait length -64
+		accum 3 bitreset 3
+
+		//defense1 verwijderen
+		trigger defense1 remove
+
+		trigger self run_continue
+	}
+
+	trigger move_to_035
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_035 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_036
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_036 80 wait length -64 roll 0 1
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_037
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_037 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_038
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_038 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_039
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_039 50 wait length -64 roll 1 2
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_040
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_040 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_041
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_041 60 wait length -64 roll 2 0
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	//--------------------------------
+	// normal route
+	trigger move_to_042
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_042 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_043
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_043 60 wait length -64
+		accum 3 bitreset 3
+
+		//evt. uje_down uit, als spanning_4 begint..de mooiste laten horen.
+		trigger game_manager enablespeaker_uje_spanning_4
+
+		// de brug kan nu worden gemaakt..
+		trigger bridge1 show_crates
+
+		trigger self run_continue
+	}
+
+	trigger move_to_044
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_044 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_045
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_045 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_046
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_046 60 wait length -64 roll 0 -2 dampin
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_047
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_047 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_048
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_048 60 wait length -64 roll -2 -1 dampin
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_049
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_049 60 wait length -64 roll -1 1 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_050
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_050 60 wait length -64 roll 1 0 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_051
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_051 70 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+
+	//-----------------------------------
+	//--- 1e punt op de brug
+	trigger move_to_052
+	{
+		// de tank is net de brug opgereden
+		trigger bridge1 tank_on_bridge1
+
+		enablespeaker uje_spanning_2_loop
+
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_052 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_053
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_053 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_054
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_054 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_055
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_055 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_056
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_056 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_057
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_057 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_058
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_058 80 wait length -64
+		accum 3 bitreset 3
+
+		// de tank is net van de brug gereden
+		trigger bridge1 tank_not_on_bridge1
+
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 0 "uje_axis_tank_is_across_bridge"
+//		wm_teamvoiceannounce 1 "uje_axis_tank_is_across_bridge"
+		// *----------------------------------- vo ------------------------------------------*
+
+		disablespeaker uje_spanning_2_loop
+
+		trigger self run_continue
+	}
+
+	trigger move_to_059
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_059 80 wait length -64
+		accum 3 bitreset 3
+
+		// spelers mogen nu niet de tank op, maar wel van de tank af
+		// dit ivm. score end-screen in limbo
+		allowtankenter no
+		allowtankexit yes
+		trigger turret_lock2 run //sound
+
+		// de tank kan niet meer kapot.. anders wordt het te moeilijk voor Axis in Allies kamp
+		//setdamagable <targetname> <status>
+//		setdamagable tank 0
+//		settankammo tank 0			// maakt de tank-damage onzichtbaar
+//		wm_announce "^5The tank is no longer damagable"
+
+		trigger self run_continue
+	}
+	//-----------------------------------------
+
+	trigger move_to_060
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_060 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_061
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_061 60 wait length -64 roll 0 3 dampin
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_062
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_062 60 wait length -64 roll 3 2 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_063
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_063 60 wait length -64 roll 2 0 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_064
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_064 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_065
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_065 70 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_066
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_066 70 wait length -64 roll 0 -3 dampin
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_067
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_067 70 wait length -64 roll -3 0 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_068
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_068 70 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_069
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_069 70 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_070
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_070 70 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_071
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_071 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_072
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_072 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_073
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_073 80 wait length -64 roll 0 -1 dampin
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_074
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_074 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_075
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_075 80 wait length -64 roll -1 0 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_076
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_076 80 wait length -64 roll 0 0 dampout
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_077
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_077 80 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue
+	}
+
+	trigger move_to_078
+	{
+//		trigger self tracks_forward
+		accum 3 bitset 3
+//		followspline 0 path_078 80 wait length -64
+//		accum 3 bitreset 3
+
+		stopsound
+//		trigger self sound_idle
+		trigger self tracks_stop
+
+		trigger self script_lock
+
+		// stop de tank in Braboheim
+		accum 3 bitset 1 //stuck
+
+		// tank is klaar, niet veel XP meer uitdelen met (kapot) maken
+		//trigger tank_construct final_pos
+
+		// de tank is op de plek van bestemming..Axis team wint
+		trigger game_manager axis_win
+
+		// add:
+		//-- allies --
+//		wm_removeteamvoiceannounce 1 "uje_tank_protect"		// 1=allies, 0=axis
+//		wm_removeteamvoiceannounce 0 "uje_tank_steal"
+	}
+
+
+	//-----------------------------------
+	// Tank long route
+	//-----------------------------------
+	trigger check_long_route_start
+	{
+		trigger self short_route_msg
+		// is barricade #1 niet gemaakt?
+		accum 3 abort_if_not_bitset 7
+
+//		trigger self script_lock
+
+		// kies de lange route
+		accum 5 set 1
+
+//		// draai de wegwijzer om
+//		trigger tank_route turn_long
+
+//		// plaats de tank op de lange route..
+//		followspline 0 path_032_long 0 wait length -64
+
+//		trigger self script_unlock
+
+		wm_announce "^5tank taking long route"
+	}
+	trigger short_route_msg
+	{
+		// is barricade #1 gemaakt?
+		accum 3 abort_if_bitset 7
+		wm_announce "^5tank taking short route"
+	}
+
+	trigger run_continue_long
+	{
+		accum 1 inc 1
+		trigger self deathcheck
+		trigger self stopcheck
+		trigger self move_long
+	}
+
+	trigger move_long
+	{
+		trigger self move_check_long
+		wait 500
+		trigger self move_long
+	}
+
+	trigger move_check_long
+	{
+		trigger self stuck_check
+		accum 3 abort_if_bitset 1
+
+		// lange route
+		accum 1 trigger_if_equal 32 tank move_to_032_long
+		accum 1 trigger_if_equal 33 tank move_to_033_long
+		accum 1 trigger_if_equal 34 tank move_to_034_long
+		accum 1 trigger_if_equal 35 tank move_to_035_long
+		accum 1 trigger_if_equal 36 tank move_to_036_long
+		accum 1 trigger_if_equal 37 tank move_to_037_long
+		accum 1 trigger_if_equal 38 tank move_to_038_long
+		accum 1 trigger_if_equal 39 tank move_to_039_long
+		accum 1 trigger_if_equal 40 tank move_to_040_long
+		accum 1 trigger_if_equal 41 tank move_to_041_long
+		accum 1 trigger_if_equal 42 tank move_to_042_long
+		accum 1 trigger_if_equal 43 tank move_to_043_long
+		accum 1 trigger_if_equal 44 tank move_to_044_long
+		accum 1 trigger_if_equal 45 tank move_to_045_long
+		accum 1 trigger_if_equal 46 tank move_to_046_long
+		accum 1 trigger_if_equal 47 tank move_to_047_long
+		accum 1 trigger_if_equal 48 tank move_to_048_long
+		accum 1 trigger_if_equal 49 tank move_to_049_long
+		accum 1 trigger_if_equal 50 tank move_to_050_long
+		accum 1 trigger_if_equal 51 tank move_to_051_long
+		accum 1 trigger_if_equal 52 tank move_to_052_long
+		accum 1 trigger_if_equal 53 tank move_to_053_long
+		accum 1 trigger_if_equal 54 tank move_to_054_long
+		accum 1 trigger_if_equal 55 tank move_to_055_long
+		accum 1 trigger_if_equal 56 tank move_to_056_long
+		accum 1 trigger_if_equal 57 tank move_to_057_long
+		accum 1 trigger_if_equal 58 tank move_to_058_long
+		accum 1 trigger_if_equal 59 tank move_to_059_long
+		accum 1 trigger_if_equal 60 tank move_to_060_long
+		accum 1 trigger_if_equal 61 tank move_to_061_long
+		accum 1 trigger_if_equal 62 tank move_to_062_long
+	}
+
+	trigger move_to_032_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_032_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_033_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_033_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_034_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_034_long 60 wait length -64
+		accum 3 bitreset 3
+
+		// laat barricade #1 weten, dat deze weg kan.. de tank is er voorbij
+		trigger defense1 tank_passed_defense1
+
+		trigger self run_continue_long
+	}
+
+	trigger move_to_035_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_035_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_036_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_036_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_037_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_037_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_038_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_038_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_039_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_039_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_040_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_040_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_041_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_041_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_042_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_042_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_043_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_043_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_044_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_044_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_045_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_045_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_046_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_046_long 60 wait length -64 roll 0 2
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_047_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_047_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_048_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_048_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_049_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_049_long 60 wait length -64 roll 2 0
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_050_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_050_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_051_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_051_long 60 wait length -64 roll 0 1
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_052_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_052_long 60 wait length -64 roll 1 3
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_053_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_053_long 60 wait length -64 roll 3 1
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_054_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_054_long 60 wait length -64 roll 1 0
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_055_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_055_long 60 wait length -64 roll 0 -2
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_056_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_056_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_057_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_057_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_058_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_058_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_059_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_059_long 40 wait length -64 roll -2 0
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_060_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_060_long 50 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	trigger move_to_061_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3
+		followspline 0 path_061_long 60 wait length -64
+		accum 3 bitreset 3
+		trigger self run_continue_long
+	}
+
+	// path_062_long == path_042 (short route)
+	trigger move_to_062_long
+	{
+		trigger self tracks_forward
+		accum 3 bitset 3 //moving
+
+		followspline 0 path_042 60 wait length -64 //korte route vanaf nu..
+
+		// herstel het pad op de korte route, path_042
+		accum 5 set 0	//korte route
+		accum 1 set 42	//verdergaan vanaf path_042
+
+		accum 3 bitreset 3 //not moving
+
+		trigger self run_continue //korte pad
+	}
+
+
+
+	//-----------------------------------
+	// Turret
+	//-----------------------------------
+	trigger startfire
+	{
+		startanimation 67 8 10 nolerp norandom noloop
+	}
+
+	trigger stopfire
+	{
+		startanimation 0 1 15 nolerp norandom
+	}
+
+
+	//-----------------------------------
+	// Jerrycans laden
+	//-----------------------------------
+	trigger fuelcans_not_loading
+	{
+		accum 3 bitreset 9
+	}
+
+	trigger fuelcans_loading
+	{
+		accum 3 bitset 9
+	}
+
+
+	//-----------------------------------
+	// Tank barriere 1 
+	//-----------------------------------
+	trigger barricade1_constructed
+	{
+		accum 3 bitset 7
+
+		// draai de wegwijzer om
+		trigger tank_route turn_long
+	}
+
+	trigger barricade1_destroyed
+	{
+		accum 3 bitreset 7
+
+		// draai de wegwijzer om
+		trigger tank_route turn_short
+	}
+
+	//-----------------------------------
+	// Tank brug
+	//-----------------------------------
+	trigger bridge1_constructed
+	{
+		accum 3 bitset 8
+	}
+
+	trigger bridge1_destroyed
+	{
+		accum 3 bitreset 8
+	}
+
+	//-----------------------------------
+	// Tank in tunnel
+	//-----------------------------------
+	trigger mg_lock
+	{
+		accum 3 bitset 9		// spelers kunnen de MG niet gebruiken
+	}
+	trigger mg_unlock
+	{
+		accum 3 bitreset 9		// spelers kunnen de MG gebruiken
+	}
+
+
+}
+
+//target_script_trigger
+tank_disabler
+{
+	trigger run
+	{
+		trigger tank tank_disable
+	}
+}
+
+//target_script_trigger
+tank_enabler
+{
+	trigger run
+	{
+		trigger tank tank_enable
+	}
+}
+
+//trigger_multiple
+tank_trigger
+{
+	spawn
+	{
+		wait 100
+		attachtotag tank tag_turret
+	}
+}
+
+//trigger_objective_info
+tank_build
+{
+	spawn
+	{
+		wait 100
+		attachtotag tank tag_turret
+	}
+}
+
+//func_constructible
+tank_construct
+{
+	spawn
+	{
+		wait 400
+
+		kill tank
+
+		constructible_class 2
+		constructible_health 1200
+		constructible_constructxpbonus 10
+		constructible_destructxpbonus 10
+	}
+
+	built final
+	{
+		alertentity tank
+		wm_announce "The Tank has been repaired"
+	}
+
+	trigger final_pos
+	{
+		constructible_constructxpbonus 2
+		constructible_destructxpbonus 5
+	}
+}
+
+//misc_gamemodel
+tank_turret
+{
+	spawn
+	{
+		wait 500
+		attachtotag tank tag_turret
+	}
+}
+
+tank_smoke
+{
+	spawn
+	{
+		wait 300
+		attachtotag tank tag_turret
+		setstate tank_smoke invisible
+	}
+}
+
+tank_flash
+{
+	spawn
+	{
+		setstate tank_flash invisible
+	}
+
+	trigger run
+	{
+		setstate tank_flash default
+ 		attachtotag tank_turret tag_flash
+		faceangles 0 90 0 50
+
+		wait 50
+	}
+}
+
+//=============================================================================
+//=== Wegwijzer voor de gekozen tank-route
+//=============================================================================
+tank_route
+{
+	spawn
+	{
+		wait 200
+		//faceangles <pitch> <yaw> <roll> <duration|gototime> [accel|deccel]
+		faceangles 0 0 0 0
+	}
+	trigger turn_long
+	{
+		faceangles 0 180 0 100
+	}
+	trigger turn_short
+	{
+		faceangles 0 0 0 100
+	}
+}
+
+
+//=============================================================================
+//=== Barricade #1
+// accum 0 = tank passed the barricade? (0=no, 1=yes)
+//=============================================================================
+
+defense1
+{
+	spawn
+	{
+		wait 400
+
+		setstate defense1_materials default
+		setstate defense1_materials_clip default
+		setstate defense1_flag default
+		setstate bar1floor_fixed invisible
+		setstate bar1floor_broken default
+
+		constructible_class 3
+		constructible_chargebarreq 1.0
+		constructible_constructxpbonus 10
+		constructible_destructxpbonus 10
+//		constructible_health 4
+//		constructible_weaponclass 1
+
+//		trigger tank barricade1_destroyed
+
+		accum 0 set 0 //de tank is nog niet voorbij de barricade
+	}
+
+	buildstart final
+	{
+		setstate defense1_materials default
+		setstate defense1_materials_clip default
+		setstate defense1_flag default
+
+//		wm_announce "Barricade #1 is under construction."
+	}
+
+	built final
+	{
+		setstate defense1_materials invisible
+		setstate defense1_materials_clip invisible
+		setstate defense1_flag invisible
+		setstate bar1floor_fixed default
+		setstate bar1floor_broken invisible
+
+		//de tank laten weten dat de barricade is gebouwd.
+		trigger tank barricade1_constructed
+
+
+		//======================================
+		//---- IN-GAME TEXT --------------------
+		wm_announce "The Barricade has been constructed."
+
+		//---- JOIN SOUND ----------------------
+		// remove:
+		//-- allies --
+//		wm_removeteamvoiceannounce 1 "uje_construct_tankbarrier"
+		//--- axis ---
+//		wm_removeteamvoiceannounce 0 "uje_tankbarrier_destroyed"
+
+		// add:
+		//-- allies --
+//		wm_addteamvoiceannounce 1 "uje_tankbarrier_constructed"
+		//--- axis ---
+//		wm_addteamvoiceannounce 0 "uje_destroy_tankbarrier"
+
+		//---- IN-GAME SOUND -------------------
+		//-- allies --
+//		wm_teamvoiceannounce 1 "uje_tankbarrier_constructed"
+		//--- axis ---
+//		wm_teamvoiceannounce 0 "uje_destroy_tankbarrier"
+		//======================================
+
+		enablespeaker uje_suspense
+	}
+
+	decayed final
+	{
+		setstate defense1_materials default
+		setstate defense1_materials_clip default
+		setstate defense1_flag default
+
+		wm_announce "The Barricade has decayed."
+
+		// *----------------------------------- vo ------------------------------------------*
+//		wm_teamvoiceannounce 0 "uje_construction_failed"
+		wm_teamvoiceannounce 1 "uje_construction_failed2"
+		// *----------------------------------- vo ------------------------------------------*
+	}
+
+	death
+	{
+		setstate defense1_materials default
+		setstate defense1_materials_clip default
+		setstate defense1_flag default
+		setstate bar1floor_fixed invisible
+		setstate bar1floor_broken default
+
+		trigger tank barricade1_destroyed
+
+
+		//======================================
+		//---- IN-GAME TEXT --------------------
+		wm_announce "The Barricade has been destroyed"
+
+		//---- JOIN SOUND ----------------------
+		// remove:
+		//-- allies --
+//		wm_removeteamvoiceannounce 1 "uje_tankbarrier_constructed"
+		//--- axis ---
+//		wm_removeteamvoiceannounce 0 "uje_destroy_tankbarrier"
+
+		// add:
+		//-- allies --
+//		wm_addteamvoiceannounce 1 "uje_construct_tankbarrier"
+		//--- axis ---
+//		wm_addteamvoiceannounce 0 "uje_tankbarrier_destroyed"
+
+		//---- IN-GAME SOUND -------------------
+		//-- allies --
+//		wm_teamvoiceannounce 1 "uje_construct_tankbarrier"
+		//--- axis ---
+//		wm_teamvoiceannounce 0 "uje_tankbarrier_destroyed"
+		//======================================
+
+		enablespeaker uje_suspense
+
+		//test of de barricade weg kan
+		accum 0 abort_if_equal 0
+		trigger self remove
+	}
+
+	trigger remove
+	{
+		setstate defense1_toi invisible
+		setstate defense1_materials invisible
+		setstate defense1_materials_clip invisible
+		setstate defense1_flag invisible
+
+		remove
+
+		//---- JOIN SOUND ----------------------
+		// remove:
+		//-- allies --
+//		wm_removeteamvoiceannounce 1 "uje_tankbarrier_constructed"
+//		wm_removeteamvoiceannounce 1 "uje_construct_tankbarrier"
+		//--- axis ---
+//		wm_removeteamvoiceannounce 0 "uje_tankbarrier_destroyed"
+//		wm_removeteamvoiceannounce 0 "uje_destroy_tankbarrier"
+	}
+
+	trigger tank_passed_defense1
+	{
+		accum 0 set 1 //de tank is voorbij de barricade
+
+		constructible_constructxpbonus 5
+		constructible_destructxpbonus 5
+	}
+
+//	dynamited
+//	{
+//		wm_announce "Barricade #1 has been dynamited."
+//	}
+//
+//	defused
+//	{
+//		wm_announce "Barricade #1 dynamite has been defused."
+//	}
+}
+
+
+//=============================================================================
+//=== Bridge #1
+// accum 0 = tank momenteel op de brug (0=nee, 1=ja)
+// accum 1 = tank al voorbij brug (0=nee, 1=ja)
+//=============================================================================
+
+bridge1
+{
+	spawn
+	{
+		wait 400
+
+		trigger self hide_crates
+		setstate bridge1_non_destructable invisible
+
+		constructible_class 3
+		constructible_chargebarreq 1.5
+//		constructible_duration 2500
+		constructible_constructxpbonus 5
+		constructible_destructxpbonus 5
+//		constructible_health 4
+//		constructible_weaponclass 1
+
+		accum 0 set 0 //de tank is niet op de brug
+		accum 1 set 0 //de tank is niet voorbij de brug
+	}
+
+
+	//-- fase 1
+	buildstart stage1
+	{
+//		wm_announce "Stage 1 started ..."
+	}
+	built stage1
+	{
+		constructible_constructxpbonus 10	// stage 2 gaan bouwen
+
+//		wm_announce "Stage 1 BUILT!"
+	}
+	decayed stage1
+	{
+		trigger self show_crates
+
+//		wm_announce "Stage 1 DECAYED!"
+	}
+	death
+	{
+		trigger self show_crates
+		constructible_constructxpbonus 5	// stage 1 bouwen
+
+		trigger game_manager enablespeaker_uje_down
+
+//		wm_announce "Stage 1 DEATH!"
+	}
+
+	//-- fase 2
+	buildstart stage2
+	{
+//		wm_announce "Stage 2 started ..."
+	}
+	built stage2
+	{
+		constructible_constructxpbonus 15	// stage 3 gaan bouwen
+
+//		wm_announce "Stage 2 BUILT!"
+	}
+	decayed stage2
+	{
+		trigger self show_crates
+
+//		wm_announce "Stage 2 DECAYED!"
+	}
+	destroyed stage2
+	{
+		trigger self show_crates
+		constructible_constructxpbonus 10	// stage 2 bouwen
+
+		trigger game_manager enablespeaker_uje_down
+
+//		wm_announce "Stage 2 DESTROYED!"
+	}
+
+
+	//-- fase 3
+	buildstart final
+	{
+		trigger self show_crates
+
+//		wm_announce "The bridge is under final construction."
+	}
+
+	built final
+	{
+		trigger self hide_crates
+
+		//de tank laten weten dat de brug is gebouwd.
+		trigger tank bridge1_constructed
+
+		trigger self bridge_constructed
+
+		wm_announce "The bridge has been constructed."
+	}
+
+	decayed final
+	{
+		trigger self show_crates
+
+//		wm_announce "The bridge has decayed."
+	}
+
+	destroyed final //death
+	{
+		trigger self show_crates
+		constructible_constructxpbonus 15	// stage 3 gaan bouwen
+
+		trigger tank bridge1_destroyed
+
+		trigger self bridge_destroyed
+
+		wm_announce "The bridge has been destroyed."
+
+		trigger game_manager enablespeaker_uje_down
+	}
+
+
+	// triggers & events
+	trigger show_crates
+	{
+		setstate bridge1_materials default
+		setstate bridge1_materials_clip default
+		setstate bridge1_flag default
+		setstate bridge1_toi default
+	}
+	trigger hide_crates
+	{
+		setstate bridge1_materials invisible
+		setstate bridge1_materials_clip invisible
+		setstate bridge1_flag invisible
+		setstate bridge1_toi invisible
+	}
+
+	trigger remove
+	{
+		setstate bridge1_toi invisible
+		trigger self hide_crates
+
+		remove
+	}
+
+	trigger tank_on_bridge1
+	{
+		accum 0 set 1 //de tank is op de brug
+		// er mag geen dynamite worden gelegd.
+		// Op deze manier kan de tank niet naar de overkant zweven (zoals bv. in Fueldump)
+
+//		trigger self hide_crates
+		setstate bridge1 invisible
+		setstate bridge1_non_destructable default
+	}
+	trigger tank_not_on_bridge1
+	{
+		accum 0 set 0 //de tank is niet op de brug
+		// er mag weer dynamite worden gelegd.
+		accum 1 set 1 //de tank is voorbij de brug
+
+//		trigger self show_crates	// tank is over de brug
+		setstate bridge1 default
+		setstate bridge1_non_destructable invisible
+
+		// de brug (kapot) maken is nu niet meer zo XP-winstgevend
+		constructible_constructxpbonus 5
+		constructible_destructxpbonus 5
+
+		// limbo menu objective status bijwerken
+		trigger self objective_completed
+	}
+
+//	dynamited
+//	{
+//		accum 0 abort_if_equal 1 //de tank is op de brug, er mag geen dynamite worden gelegd.
+//
+//		wm_announce "The bridge has been dynamited."
+//	}
+
+//	defused
+//	{
+//		wm_announce "The bridge dynamite has been defused."
+//	}
+
+	// mission objective bijwerken in limbo menu
+	trigger bridge_constructed
+	{
+		accum 1 abort_if_equal 1
+		// (0=neutral 1=complete 2=failed)
+		wm_objective_status 5 0 1
+		wm_objective_status 5 1 0
+	}
+	trigger bridge_destroyed
+	{
+		accum 1 abort_if_equal 1
+		wm_objective_status 5 0 0
+		wm_objective_status 5 1 1
+	}
+	trigger objective_completed
+	{
+		wm_objective_status 5 0 1
+		wm_objective_status 5 1 2
+	}
+}
+
+
+//=============================================================================
+//=== Health Cabinet
+//=============================================================================
+
+healthcabinet_fixed_construct
+{
+	spawn
+	{
+		wait 400
+
+		setstate healthcabinet_broken default
+		setstate healthcabinet_broken_clip default
+		setstate healthcabinet_fixed invisible
+		setstate healthcabinet_fixed_clip invisible
+		setstate healthcabinet_trigger_heal invisible
+//		setstate healthcabinet_fixed_construct invisible
+
+		constructible_class 1
+		constructible_chargebarreq 1.0
+		constructible_constructxpbonus 5
+		constructible_destructxpbonus 10
+		constructible_health 4
+		constructible_weaponclass 1
+		//constructible_duration 2500
+	}
+
+	buildstart final
+	{
+		setstate healthcabinet_broken default
+		setstate healthcabinet_broken_clip default
+		setstate healthcabinet_fixed invisible
+		setstate healthcabinet_fixed_clip invisible
+		setstate healthcabinet_trigger_heal invisible
+//		setstate healthcabinet_fixed_construct invisible
+
+//		wm_announce "The health-cabinet is under construction."
+	}
+
+	built final
+	{
+		setstate healthcabinet_broken invisible
+		setstate healthcabinet_broken_clip invisible
+		setstate healthcabinet_fixed default
+		setstate healthcabinet_fixed_clip default
+		setstate healthcabinet_trigger_heal default
+//		setstate healthcabinet_fixed_construct invisible
+
+//		wm_announce "The health-cabinet has been constructed."
+
+		enablespeaker uje_suspense
+	}
+
+	decayed final
+	{
+		setstate healthcabinet_broken default
+		setstate healthcabinet_broken_clip default
+		setstate healthcabinet_fixed invisible
+		setstate healthcabinet_fixed_clip invisible
+		setstate healthcabinet_trigger_heal invisible
+//		setstate healthcabinet_fixed_construct invisible
+
+//		wm_announce "The health-cabinet has decayed."
+
+		// *----------------------------------- vo ------------------------------------------*
+//		wm_teamvoiceannounce 1 "uje_construction_failed"
+		// *----------------------------------- vo ------------------------------------------*
+	}
+
+	death
+	{
+		setstate healthcabinet_broken default
+		setstate healthcabinet_broken_clip default
+		setstate healthcabinet_fixed invisible
+		setstate healthcabinet_fixed_clip invisible
+		setstate healthcabinet_trigger_heal invisible
+
+//		setstate healthcabinet_fixed_construct default
+
+//		wm_announce "The health-cabinet has been destroyed."
+	}
+
+	trigger remove
+	{
+		setstate healthcabinet_broken invisible
+		setstate healthcabinet_broken_clip invisible
+		setstate healthcabinet_fixed invisible
+		setstate healthcabinet_fixed_clip invisible
+		setstate healthcabinet_trigger_heal invisible
+//		setstate healthcabinet_fixed_construct invisible
+
+		remove
+	}
+}
+
+
+//=============================================================================
+//=== Explosive wall
+//=============================================================================
+
+//fallingtree
+//{
+//	spawn
+//	{
+//		wm_announce "fallingtree INITIALIZED"
+//	}
+//	trigger fall
+//	{
+//		// angles van 4 41 0 naar 87 41 0
+//		faceangles 87 41 0 1000 ACCEL
+//	}
+//}
+bushfire
+{
+	spawn
+	{
+		wait 400
+		setstate bushfire invisible
+		setstate bushfire1 invisible
+		setstate bushfire2 invisible
+		setstate bushfire_hurt invisible
+	}
+	trigger onfire
+	{
+		setstate bushfire default
+		setstate bushfire1 default
+		setstate bushfire2 default
+		setstate bushfire_hurt default
+
+//		wm_announce "bush on fire"
+
+		wait 60000
+
+		setstate bushfire1 invisible
+		wait 3000
+		setstate bushfire invisible
+		wait 5000
+		setstate bushfire2 invisible
+		setstate bushfire_hurt invisible
+//		wait 4000
+//		fallingtree trigger fall
+
+		trigger self remove
+	}
+	trigger remove
+	{
+		setstate bushfire invisible
+		setstate bushfire1 invisible
+		setstate bushfire2 invisible
+		setstate bushfire_hurt invisible
+
+		remove
+	}
+}
+
+wall_rubble
+{
+	spawn
+	{
+		wait 400
+
+		setstate wall_rubble default
+		setstate wall_rubble_dust invisible
+
+		constructible_class 1
+		constructible_chargebarreq 1.5
+		constructible_constructxpbonus 0
+		constructible_destructxpbonus 10
+		constructible_health 1000 //00
+		constructible_weaponclass 1
+		//constructible_duration 2500
+	}
+
+	buildstart final
+	{
+	}
+
+	built final
+	{
+	}
+
+	decayed final
+	{
+	}
+
+	death
+	{
+		setstate wall_rubble_dust default
+		setstate wall_toi invisible
+
+		alertentity wall_rubble_explosion
+
+		wm_announce "The Wall has breached."
+
+		// de brand na de explosie van de muur
+		wait 800
+		trigger bushfire onfire
+
+
+		wait 8000
+		trigger self remove
+	}
+
+	trigger remove
+	{
+		setstate wall_rubble_dust invisible
+		setstate wall_rubble invisible
+		setstate wall_toi invisible
+
+		remove
+	}
+}
+
+
+//=============================================================================
+//=== flying bird animations
+//=============================================================================
+
+// havik
+bird_sound
+{
+	trigger pain
+	{
+		trigger flying sound_pain
+	}
+}
+
+flying
+{
+	spawn
+	{
+		// aantal keer geraakt teller
+		accum 0 set 0
+
+		wait 200
+		trigger self move
+	}
+
+	pain
+	{
+		//een havik geluid
+		trigger self sound_pain
+
+		trigger self pain_message
+
+		accum 0 inc 1
+		trigger self check_drop
+	}
+
+	trigger pain_message
+	{
+		// maar 1x een melding geven
+		accum 0 abort_if_greater_than 0
+		wm_announce "Do not hurt the animals.. woot woot"
+	}
+
+	trigger move
+	{
+		// teller op 0
+		accum 0 set 0
+		// rotatie herstellen: faceangles <pitch> <yaw> <roll> <duration/GOTOTIME> [ACCEL/DECCEL]
+		faceangles 0 0 0 1
+		// setposition werkt mbv. een path_corner
+		setposition flying_start
+		//gotomarker <targetname> <speed> [accel|deccel] [turntotarget] [wait] [relative <position_targetname>]
+		gotomarker flying_1 164 wait
+		trigger self move_to_1
+	}
+	trigger move_to_1
+	{
+		gotomarker flying_2 164 turntotarget wait
+		trigger self move_to_2
+	}
+	trigger move_to_2
+	{
+		gotomarker flying_end 164 turntotarget wait
+		trigger self move
+	}
+
+	trigger check_drop
+	{
+		// 5x geraakt? dan neervallen..
+		accum 0 abort_if_less_than 5
+		trigger self drop
+	}
+
+	trigger drop
+	{
+		halt
+		setspeed -140 0 -300
+		setrotation 400 0 0 gravity
+		wait random 10000 20000
+		abortmove
+		trigger self move
+	}
+
+	trigger sound_pain
+	{
+		stopsound
+		playsound sound/uje/hawk.wav volume 512
+	}
+}
+
+// gans
+flying_goose_sound
+{
+	trigger pain
+	{
+		trigger flying_goose sound_pain
+	}
+}
+
+flying_goose
+{
+	spawn
+	{
+		// aantal keer geraakt teller
+		accum 0 set 0
+
+		wait 200
+		trigger self move
+	}
+
+	pain
+	{
+		//een ganzen geluid
+		trigger self sound_pain
+
+		trigger self pain_message
+
+		accum 0 inc 1
+		trigger self check_drop
+	}
+
+	trigger pain_message
+	{
+		// maar 1x een melding geven
+		accum 0 abort_if_greater_than 0
+		wm_announce "Do not hurt the animals.. woot woot"
+	}
+
+	trigger move
+	{
+		// teller op 0
+		accum 0 set 0
+		// rotatie herstellen
+		faceangles 0 0 0 1
+		setposition goose_start
+		gotomarker goose_end 164 wait
+		trigger self move
+	}
+
+	trigger check_drop
+	{
+		// 7x geraakt? dan neervallen..
+		accum 0 abort_if_less_than 7
+		trigger self drop
+	}
+
+	trigger drop
+	{
+		halt
+		setspeed 140 0 -300
+		setrotation -600 0 0 gravity
+		wait random 15000 27000
+		abortmove
+		trigger self move
+	}
+
+	trigger sound_pain
+	{
+		stopsound
+		playsound sound/uje/goose.wav volume 512
+	}
+}
+
+
+//=============================================================================
+//=== Speedbootje
+// accum 0 = path indicator (0=onderweg, 1=dock1, 2=dock2)
+//=============================================================================
+speedy_mover
+{
+	spawn
+	{
+		accum 0 set 1
+		followspline 0 speedy_path_34 10000 wait
+//		faceangles 0 90 0 50
+
+		// reset shaders
+//!!!		remapshader "textures/UJE_00/uje_schroef" "textures/UJE_00/uje_schroef"
+//!!!		remapshaderflush
+	}
+	trigger move_dock1_dock2
+	{
+		// alleen gaan varen als de boot stil ligt bij dock1
+		accum 0 abort_if_equal 0	// aan het varen
+		accum 0 abort_if_equal 2	// al bij dock2
+
+		// de boot is aan het varen
+		accum 0 set 0
+
+		trigger self sound_start
+//!!!		remapshader "textures/UJE_00/uje_schroef" "textures/UJE_00/uje_schroef_rotating"
+//!!!		remapshaderflush
+		wait 1000
+		trigger self sound_run
+
+		//followspline <direction 0(forward)|1(backward)> <splinename> <speed> [length <turningcircle>][wait]
+		followspline 0 speedy_path_00 200 wait
+		followspline 0 speedy_path_01 300 wait
+		followspline 0 speedy_path_02 400 wait
+		followspline 0 speedy_path_03 500 wait
+		followspline 0 speedy_path_04 600 wait
+		followspline 0 speedy_path_05 600 wait
+		followspline 0 speedy_path_06 600 wait
+		followspline 0 speedy_path_07 600 wait
+		followspline 0 speedy_path_08 600 wait
+		followspline 0 speedy_path_09 600 wait
+		followspline 0 speedy_path_10 600 wait
+		followspline 0 speedy_path_11 600 wait
+		followspline 0 speedy_path_12 600 wait
+		followspline 0 speedy_path_13 600 wait
+		followspline 0 speedy_path_14 500 wait
+		followspline 0 speedy_path_15 200 wait
+		//followspline 0 speedy_path_16 200 wait
+		//followspline 0 speedy_path_17 100 wait
+		followspline 0 speedy_path_18 100 wait
+
+		trigger self sound_stop
+//!!!		remapshader "textures/UJE_00/uje_schroef" "textures/UJE_00/uje_schroef"
+//!!!		remapshaderflush
+
+		followspline 0 speedy_path_19 100 wait
+
+		// de boot ligt nu bij dock2
+		wait 7000
+		accum 0 set 2
+	}
+	trigger move_dock2_dock1
+	{
+		// alleen gaan varen als de boot stil ligt bij dock2
+		accum 0 abort_if_equal 0	// aan het varen
+		accum 0 abort_if_equal 1	// al bij dock1
+
+		// de boot is aan het varen
+		accum 0 set 0
+
+		trigger self sound_start
+//!!!		remapshader "textures/UJE_00/uje_schroef" "textures/UJE_00/uje_schroef_rotating"
+//!!!		remapshaderflush
+		wait 1000
+		trigger self sound_run
+
+		followspline 0 speedy_path_20 200 wait
+		followspline 0 speedy_path_21 400 wait
+		followspline 0 speedy_path_22 600 wait
+		followspline 0 speedy_path_23 600 wait
+		followspline 0 speedy_path_24 600 wait
+		followspline 0 speedy_path_25 600 wait
+		followspline 0 speedy_path_26 600 wait
+		followspline 0 speedy_path_27 600 wait
+		followspline 0 speedy_path_28 600 wait
+		followspline 0 speedy_path_29 500 wait
+		followspline 0 speedy_path_30 300 wait
+		followspline 0 speedy_path_31 200 wait
+		//followspline 0 speedy_path_32 200 wait
+		//followspline 0 speedy_path_33 100 wait
+
+		trigger self sound_stop
+//!!!		remapshader "textures/UJE_00/uje_schroef" "textures/UJE_00/uje_schroef"
+//!!!		remapshaderflush
+
+		followspline 0 speedy_path_34 100 wait
+
+		// de boot ligt nu bij dock1
+		wait 7000
+		accum 0 set 1
+	}
+
+	// speedboot geluid
+	trigger sound_start
+	{
+		stopsound
+		playsound sound/uje/speedy_start.wav volume 512
+	}
+
+	trigger sound_run
+	{
+		stopsound
+		playsound sound/uje/speedy_loop.wav looping volume 512
+	}
+
+	trigger sound_stop
+	{
+		stopsound
+		playsound sound/uje/speedy_stop.wav volume 256
+	}
+}
+
+//target_script_trigger
+speedy_dock1
+{
+	trigger run
+	{
+		trigger speedy_mover move_dock1_dock2
+	}
+}
+speedy_dock2
+{
+	trigger run
+	{
+		trigger speedy_mover move_dock2_dock1
+	}
+}
+
+// speedboot geluid
+speedy_sound
+{
+	trigger start
+	{
+		trigger speedy_mover sound_start
+	}
+	trigger run
+	{
+		trigger speedy_mover sound_run
+	}
+	trigger stop
+	{
+		trigger speedy_mover sound_stop
+	}
+}
+
+
+//=============================================================================
+//=== Reddingsboei
+//=============================================================================
+// script_mover
+reddingsboei
+{
+	spawn
+	{
+		wait 200
+		faceangles 0 0 0 1
+		setposition reddingsboei_start
+	}
+
+	trigger move
+	{
+		// rotatie herstellen: faceangles <pitch> <yaw> <roll> <duration/GOTOTIME> [ACCEL/DECCEL]
+		faceangles 0 0 0 1
+		// setposition werkt mbv. een path_corner
+		setposition reddingsboei_start
+		trigger self move_to_0
+	}
+	trigger move_to_0
+	{
+		gotomarker reddingsboei_0 300 wait
+		faceangles 90 90 0 1
+		trigger self move_to_1
+	}
+	trigger move_to_1
+	{
+		gotomarker reddingsboei_1 700 wait
+		trigger self move_to_2
+	}
+	trigger move_to_2
+	{
+		gotomarker reddingsboei_2 700 wait
+		trigger self move_to_end
+	}
+	trigger move_to_end
+	{
+		gotomarker reddingsboei_end 700 wait
+
+		// de pyranha-trigger_hurts uitschakelen
+		setstate pyranha_hurt invisible
+
+		wait 60000
+		// positie herstellen (boei terughangen)
+		faceangles 0 0 0 1
+		setposition reddingsboei_start
+
+		// de pyranha-trigger_hurts inschakelen
+		setstate pyranha_hurt default
+	}
+}
+
+// func_invisible_user
+reddingsboei_trigger
+{
+	activate
+	{
+		trigger reddingsboei move
+	}
+}
+
+
+//=============================================================================
+//=== Speaker triggers
+//=============================================================================
+//target_script_trigger
+intruder_alert
+{
+	trigger run
+	{
+		disablespeaker uje_alarm
+		enablespeaker uje_alarm
+		wait 380			// 1x alarm
+		disablespeaker uje_alarm
+		wait 380
+	}
+}
+
+falling_bomb
+{
+	trigger run
+	{
+//		disablespeaker uje_impact
+		enablespeaker uje_impact
+//		wait 2700			// 1x inslaande bom
+//		disablespeaker uje_impact
+	}
+}
+
+turret_lock
+{
+	trigger run
+	{
+//		disablespeaker uje_turret_lock
+		enablespeaker uje_turret_lock
+//		wait 530
+//		disablespeaker uje_turret_lock
+	}
+}
+turret_lock2
+{
+	trigger run
+	{
+//		disablespeaker uje_turret_lock2
+		enablespeaker uje_turret_lock2
+//		wait 530
+//		disablespeaker uje_turret_lock2
+	}
+}
+turret_unlock
+{
+	trigger run
+	{
+//		disablespeaker uje_turret_unlock
+		enablespeaker uje_turret_unlock
+//		wait 850
+//		disablespeaker uje_turret_unlock
+	}
+}
+
+
+// ter nagedachtenis aan Erik Nillissen, [UJE] Marinier
+//trigger_multiple
+// accum 0 = geluid laten horen indien getriggerd? (0=nee, 1=ja)
+credo
+{
+	spawn
+	{
+		accum 0 set 1
+	}
+	trigger run
+	{
+		accum 0 abort_if_equal 0	//playback disabled??
+
+		// made a looped sound, because of range problems.
+		globalaccum 4 set 1		// credo is bezig..
+		disablespeaker uje_credo
+		enablespeaker uje_credo
+		wait 52000
+		disablespeaker uje_credo
+		globalaccum 4 set 0		// credo is niet bezig..
+	}
+	trigger disable
+	{
+		accum 0 set 0
+	}
+	trigger enable
+	{
+		accum 0 set 1
+	}
+}
+
+
+//=============================================================================
+//=== Pilsjes tappen
+//=============================================================================
+//func_invisible_user
+// accum 0 = bezig met tappen (0=nee, 1=ja)
+biertje
+{
+	spawn
+	{
+		// niet bezig met tappen
+		accum 0 set 0
+	}
+	activate
+	{
+		// bezig met tappen?? dan niet triggeren..
+		accum 0 abort_if_equal 1
+		// bezig met tappen
+		accum 0 set 1
+
+		trigger tap start_tappen
+	}
+	trigger stop_tappen
+	{
+		// niet bezig met tappen
+		accum 0 set 0
+	}
+}
+
+//script_mover
+// accum 0 = aantal pilsjes getapt
+// accum 1 = bit 10..1 pilsje opgedronken (hidden) (0=shown, 1=hidden)
+tap
+{
+	spawn
+	{
+		wait 400
+
+		// alle pilsjes zijn zichtbaar: 1024+512+256 + 128+64+32+16+8+4+2 = 2046
+		accum 1 set 2046
+
+		// alle pilsjes verbergen
+		trigger self pils_hide
+	}
+	trigger pils_hide
+	{
+		// teller resetten
+		accum 0 set 0
+
+		trigger self pils_1_hide
+		trigger self pils_2_hide
+		trigger self pils_3_hide
+		trigger self pils_4_hide
+		trigger self pils_5_hide
+		trigger self pils_6_hide
+		trigger self pils_7_hide
+		trigger self pils_8_hide
+		trigger self pils_9_hide
+		trigger self pils_10_hide
+	}
+	trigger pils_1_show
+	{
+		accum 1 bitset 1
+		setstate pils_1 default
+		setstate pils_1_trigger default
+	}
+	trigger pils_2_show
+	{
+		accum 1 bitset 2
+		setstate pils_2 default
+		setstate pils_2_trigger default
+	}
+	trigger pils_3_show
+	{
+		accum 1 bitset 3
+		setstate pils_3 default
+		setstate pils_3_trigger default
+	}
+	trigger pils_4_show
+	{
+		accum 1 bitset 4
+		setstate pils_4 default
+		setstate pils_4_trigger default
+	}
+	trigger pils_5_show
+	{
+		accum 1 bitset 5
+		setstate pils_5 default
+		setstate pils_5_trigger default
+	}
+	trigger pils_6_show
+	{
+		accum 1 bitset 6
+		setstate pils_6 default
+		setstate pils_6_trigger default
+	}
+	trigger pils_7_show
+	{
+		accum 1 bitset 7
+		setstate pils_7 default
+		setstate pils_7_trigger default
+	}
+	trigger pils_8_show
+	{
+		accum 1 bitset 8
+		setstate pils_8 default
+		setstate pils_8_trigger default
+	}
+	trigger pils_9_show
+	{
+		accum 1 bitset 9
+		setstate pils_9 default
+		setstate pils_9_trigger default
+	}
+	trigger pils_10_show
+	{
+		accum 1 bitset 10
+		setstate pils_10 default
+		setstate pils_10_trigger default
+	}
+
+	trigger pils_1_hide
+	{
+		accum 1 abort_if_not_bitset 1
+		accum 1 bitreset 1
+		setstate pils_1 invisible
+		setstate pils_1_trigger invisible
+	}
+	trigger pils_2_hide
+	{
+		accum 1 abort_if_not_bitset 2
+		accum 1 bitreset 2
+		setstate pils_2 invisible
+		setstate pils_2_trigger invisible
+	}
+	trigger pils_3_hide
+	{
+		accum 1 abort_if_not_bitset 3
+		accum 1 bitreset 3
+		setstate pils_3 invisible
+		setstate pils_3_trigger invisible
+	}
+	trigger pils_4_hide
+	{
+		accum 1 abort_if_not_bitset 4
+		accum 1 bitreset 4
+		setstate pils_4 invisible
+		setstate pils_4_trigger invisible
+	}
+	trigger pils_5_hide
+	{
+		accum 1 abort_if_not_bitset 5
+		accum 1 bitreset 5
+		setstate pils_5 invisible
+		setstate pils_5_trigger invisible
+	}
+	trigger pils_6_hide
+	{
+		accum 1 abort_if_not_bitset 6
+		accum 1 bitreset 6
+		setstate pils_6 invisible
+		setstate pils_6_trigger invisible
+	}
+	trigger pils_7_hide
+	{
+		accum 1 abort_if_not_bitset 7
+		accum 1 bitreset 7
+		setstate pils_7 invisible
+		setstate pils_7_trigger invisible
+	}
+	trigger pils_8_hide
+	{
+		accum 1 abort_if_not_bitset 8
+		accum 1 bitreset 8
+		setstate pils_8 invisible
+		setstate pils_8_trigger invisible
+	}
+	trigger pils_9_hide
+	{
+		accum 1 abort_if_not_bitset 9
+		accum 1 bitreset 9
+		setstate pils_9 invisible
+		setstate pils_9_trigger invisible
+	}
+	trigger pils_10_hide
+	{
+		accum 1 abort_if_not_bitset 10
+		accum 1 bitreset 10
+		setstate pils_10 invisible
+		setstate pils_10_trigger invisible
+	}
+
+	trigger start_tappen
+	{
+		stoprotation			// !!!
+		halt				// !!!
+		faceangles 0 0 0 1 //reset
+
+		enablespeaker tap_biertje	// wait 4500
+		
+		//faceangles <pitch> <yaw> <roll> <duration|gototime> [accel|deccel]
+		faceangles -90 0 0 2000 wait
+
+		accum 0 inc 1
+
+		//(global)accum <buffer_index> trigger_if_equal <value> <scriptblock> <trigger_event>
+		accum 0 trigger_if_equal 1 tap pils_1_show
+		accum 0 trigger_if_equal 2 tap pils_2_show
+		accum 0 trigger_if_equal 3 tap pils_3_show
+		accum 0 trigger_if_equal 4 tap pils_4_show
+		accum 0 trigger_if_equal 5 tap pils_5_show
+		accum 0 trigger_if_equal 6 tap pils_6_show
+		accum 0 trigger_if_equal 7 tap pils_7_show
+		accum 0 trigger_if_equal 8 tap pils_8_show
+		accum 0 trigger_if_equal 9 tap pils_9_show
+		accum 0 trigger_if_equal 10 tap pils_10_show
+		accum 0 trigger_if_equal 11 tap pils_hide
+
+		// hendel terug bewegen
+		faceangles 0 0 0 2000 wait
+
+		stoprotation
+		halt
+
+		wait 500
+		disablespeaker tap_biertje
+
+		// niet bezig met tappen
+		trigger biertje stop_tappen
+	}
+}
+
+//func_invisible
+pils_1_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_1_hide
+	}
+}
+pils_2_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_2_hide
+	}
+}
+pils_3_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_3_hide
+	}
+}
+pils_4_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_4_hide
+	}
+}
+pils_5_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_5_hide
+	}
+}
+pils_6_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_6_hide
+	}
+}
+pils_7_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_7_hide
+	}
+}
+pils_8_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_8_hide
+	}
+}
+pils_9_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_9_hide
+	}
+}
+pils_10_trigger
+{
+	activate
+	{
+		disablespeaker uje_drink
+		enablespeaker uje_drink
+		trigger tap pils_10_hide
+	}
+}
+
+
+
+//=============================================================================
+//=== Bel - rondje geven
+//=============================================================================
+//func_invisible_user
+bel_rondje
+{
+	spawn
+	{
+//		wait 100
+	}
+	activate
+	{
+		trigger rondje trakteren
+	}
+}
+
+//script_mover
+rondje
+{
+	spawn
+	{
+		wait 100
+		faceangles 0 0 0 1 //reset
+	}
+	trigger trakteren
+	{
+		stoprotation			// !!!
+		halt				// !!!
+		faceangles 0 0 0 1 //reset
+
+		enablespeaker uje_rondje
+
+		faceangles 0 30 0 125
+		faceangles 0 -30 0 125
+		faceangles 0 30 0 125
+		faceangles 0 -30 0 125
+		faceangles 0 30 0 125
+		faceangles 0 -30 0 125
+		faceangles 0 30 0 125
+		faceangles 0 -30 0 125
+		faceangles 0 30 0 125
+		faceangles 0 -30 0 125
+
+		stoprotation			// !!!
+		halt				// !!!
+		faceangles 0 0 0 1 //reset
+	}
+}
+
+
+//=============================================================================
+//=== Pacman
+//=============================================================================
+//func_invisible_user
+pacman_knuppel_trigger
+{
+	spawn
+	{
+//		wait 100
+	}
+	activate
+	{
+		trigger pacman_knuppel game_on
+	}
+}
+
+//script_mover
+pacman_knuppel
+{
+	spawn
+	{
+		wait 100
+		faceangles 0 0 0 1 //reset
+	}
+	trigger game_on
+	{
+		setstate pacman_knuppel_trigger invisible
+
+		disablespeaker uje_pacman_ready
+		enablespeaker uje_pacman_ready
+		wait 4300
+		disablespeaker uje_pacman_ready
+
+		enablespeaker uje_pacman_eat
+
+		faceangles 0 0 0 1 //reset
+		faceangles 40 0 0 250
+		faceangles -60 0 0 250
+		wait 500
+		faceangles 40 0 0 250
+		faceangles -60 0 0 250
+		wait 300
+		faceangles 0 0 40 250
+		faceangles 0 0 -60 250
+		faceangles 0 0 60 250
+		wait 500
+		faceangles 0 0 -40 250
+		faceangles 30 0 0 250
+		wait 300
+		faceangles -30 0 0 250
+		faceangles 0 0 0 1
+		wait 1000
+		faceangles 0 0 0 1 //reset
+		faceangles 40 0 0 250
+		faceangles -60 0 0 250
+		wait 500
+		faceangles 40 0 0 250
+		faceangles -60 0 0 250
+		wait 300
+		faceangles 0 0 40 250
+		faceangles 0 0 -60 250
+		faceangles 0 0 60 250
+		wait 500
+		faceangles 0 0 -40 250
+		faceangles 30 0 0 250
+		wait 300
+		faceangles -30 0 0 250
+		faceangles 0 0 0 1
+		wait 1000
+		faceangles 0 0 0 1 //reset
+		faceangles 40 0 0 250
+		faceangles -60 0 0 250
+		wait 500
+		faceangles 40 0 0 250
+		faceangles -60 0 0 250
+		wait 300
+		faceangles 0 0 40 250
+		faceangles 0 0 -60 250
+		faceangles 0 0 60 250
+		wait 500
+		faceangles 0 0 -40 250
+		faceangles 30 0 0 250
+		wait 300
+		faceangles -30 0 0 250
+		faceangles 0 0 0 1
+		wait 1000
+
+		disablespeaker uje_pacman_eat
+
+		disablespeaker uje_pacman_killed
+		enablespeaker uje_pacman_killed
+		wait 1600
+		disablespeaker uje_pacman_killed
+
+		setstate pacman_knuppel_trigger default
+
+		trigger self reset
+	}
+	trigger reset
+	{
+		stoprotation
+		halt
+		faceangles 0 0 0 1 //reset
+	}
+}
+
+
+//=============================================================================
+//=== Gokkast
+//=============================================================================
+//func_invisible_users
+// accum 0 = een rol draait (0=nee, 1=ja)
+// accum 1 = score
+// globalaccum 1 = tmp register
+// globalaccum 2 = vasthouden rol teller mechanisme
+gok_knop
+{
+	spawn
+	{
+		wait 100
+		remapshader "textures/UJE_00/uje_gamble" "textures/UJE_00/uje_gamble_light"
+		remapshaderflush
+
+		// niet bezig met gokken
+		accum 0 set 0
+
+		// score
+		accum 1 set 0
+
+		// vasthouden rollen mag nu
+		globalaccum 2 set 0
+	}
+	activate
+	{
+		// bezig met gokken?? dan niet triggeren..
+		accum 0 abort_if_not_equal 0
+
+		trigger self start_gokken
+	}
+	trigger start_gokken
+	{
+		// bezig met gokken
+		accum 0 set 1
+
+		setstate gok_knop invisible
+		setstate gok_hold_1 invisible
+		setstate gok_hold_2 invisible
+		setstate gok_hold_3 invisible
+		setstate gok_herstel invisible
+
+		remapshader "textures/UJE_00/uje_gamble" "textures/UJE_00/uje_gamble"
+		remapshaderflush
+
+		trigger gok_rol_1 start
+		trigger gok_rol_2 start
+		trigger gok_rol_3 start
+		wait random 2000 3500
+		trigger gok_rol_1 stop
+		wait random 1000 1500
+		trigger gok_rol_2 stop
+		wait random 1500 2000
+		trigger gok_rol_3 stop
+
+		trigger self check_after_hold
+		trigger self check_hold
+		trigger self check_hold_allowed
+
+		// vasthouden rollen
+		trigger gok_rol_1 hold_off
+		trigger gok_rol_2 hold_off
+		trigger gok_rol_3 hold_off
+
+		remapshader "textures/UJE_00/uje_gamble" "textures/UJE_00/uje_gamble_light"
+//		remapshader "textures/UJE_00/uje_cancel" "textures/UJE_00/uje_cancel"
+		remapshader "textures/UJE_00/uje_hold1" "textures/UJE_00/uje_hold1"
+		remapshader "textures/UJE_00/uje_hold2" "textures/UJE_00/uje_hold2"
+		remapshader "textures/UJE_00/uje_hold3" "textures/UJE_00/uje_hold3"
+		remapshaderflush
+
+		setstate gok_knop default
+
+		// niet bezig met gokken
+		accum 0 set 0
+
+		trigger self check_score_200
+		trigger self check_score_100
+		trigger self check_score_40
+		trigger self check_score_20
+		trigger self check_score_16_0
+		trigger self check_score_16_1
+		trigger self check_score_16_2
+		trigger self check_score_16_3
+		trigger self check_score_12_0
+		trigger self check_score_12_1
+		trigger self check_score_12_2
+		trigger self check_score_12_3
+		trigger self check_score_8_0
+		trigger self check_score_8_1
+		trigger self check_score_4
+		trigger self check_score_2
+	}
+
+	// 3x bar7 gescored?
+	trigger check_score_200
+	{
+		trigger gok_rol_1 check_score_200
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_200
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_200
+		globalaccum 1 abort_if_not_equal 1
+
+		// 3 x bar7 score !!!
+		wm_announce "^3Somebody hit the jackpot @ [UJE]cafe!"
+		enablespeaker uje_jackpot
+
+		accum 1 inc 200
+
+		resetscript
+	}
+	// 3x 7 gescored?
+	trigger check_score_100
+	{
+		trigger gok_rol_1 check_score_100
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_100
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_100
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^3100 points!"
+
+		accum 1 inc 100
+
+		resetscript
+	}
+	// 3x Paarse Druiven gescored?
+	trigger check_score_40
+	{
+		trigger gok_rol_1 check_score_40
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_40
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_40
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^340 points!"
+
+		accum 1 inc 40
+
+		resetscript
+	}
+	// 3x Klok gescored?
+	trigger check_score_20
+	{
+		trigger gok_rol_1 check_score_20
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_20
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_20
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^320 points!"
+
+		accum 1 inc 20
+
+		resetscript
+	}
+	// 3x Blauw Fruit gescored?
+	trigger check_score_16_0
+	{
+		trigger gok_rol_1 check_score_16_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_0
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^316 points!"
+
+		accum 1 inc 16
+
+		resetscript
+	}
+	// 3x Peer gescored?
+	trigger check_score_16_1
+	{
+		trigger gok_rol_1 check_score_16_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_1
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^316 points!"
+
+		accum 1 inc 16
+
+		resetscript
+	}
+	// 2x Blauw Fruit + 1x BAR gescored?
+	trigger check_score_16_2
+	{
+		trigger gok_rol_1 check_score_16_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_2
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^316 points!"
+
+		accum 1 inc 16
+
+		resetscript
+	}
+	// 2x Peer + 1x BAR gescored?
+	trigger check_score_16_3
+	{
+		trigger gok_rol_1 check_score_16_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_16_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_16_3
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^316 points!"
+
+		accum 1 inc 16
+
+		resetscript
+	}
+	// 3x Oranje Fruit gescored?
+	trigger check_score_12_0
+	{
+		trigger gok_rol_1 check_score_12_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_0
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^312 points!"
+
+		accum 1 inc 12
+
+		resetscript
+	}
+	// 3x Citroen gescored?
+	trigger check_score_12_1
+	{
+		trigger gok_rol_1 check_score_12_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_1
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^312 points!"
+
+		accum 1 inc 12
+
+		resetscript
+	}
+	// 2x Oranje Fruit + 1x BAR gescored?
+	trigger check_score_12_2
+	{
+		trigger gok_rol_1 check_score_12_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_2
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_2
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^312 points!"
+
+		accum 1 inc 12
+
+		resetscript
+	}
+	// 2x Citroen + 1x BAR gescored?
+	trigger check_score_12_3
+	{
+		trigger gok_rol_1 check_score_12_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_12_3
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_12_3
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^312 points!"
+
+		accum 1 inc 12
+
+		resetscript
+	}
+	// 3x Kers gescored?
+	trigger check_score_8_0
+	{
+		trigger gok_rol_1 check_score_8_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_8_0
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_8_0
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^38 points!"
+
+		accum 1 inc 8
+
+		resetscript
+	}
+	// 2x Kers + 1x BAR gescored?
+	trigger check_score_8_1
+	{
+		trigger gok_rol_1 check_score_8_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_8_1
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_3 check_score_8_1
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^38 points!"
+
+		accum 1 inc 8
+
+		resetscript
+	}
+	// 2x Kers gescored?
+	trigger check_score_4
+	{
+		trigger gok_rol_1 check_score_4
+		globalaccum 1 abort_if_not_equal 1
+
+		trigger gok_rol_2 check_score_4
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^34 points!"
+
+		accum 1 inc 4
+
+		resetscript
+	}
+	// 1x Kers gescored?
+	trigger check_score_2
+	{
+		trigger gok_rol_1 check_score_2
+		globalaccum 1 abort_if_not_equal 1
+
+//		wm_announce "^32 points!"
+
+		accum 1 inc 2
+
+		resetscript
+	}
+
+
+	// rollen vastzetten
+	trigger check_hold
+	{
+		globalaccum 2 abort_if_not_equal 1
+		globalaccum 2 set 2
+		trigger gok_hold_1 hold_not_allowed
+		trigger gok_hold_2 hold_not_allowed
+		trigger gok_hold_3 hold_not_allowed
+	}
+	trigger check_after_hold
+	{
+		globalaccum 2 abort_if_not_equal 2
+		globalaccum 2 set 0
+		trigger gok_hold_1 hold_not_allowed
+		trigger gok_hold_2 hold_not_allowed
+		trigger gok_hold_3 hold_not_allowed
+	}
+	trigger check_hold_allowed
+	{
+		globalaccum 2 abort_if_not_equal 0
+		trigger gok_hold_1 hold_allowed
+		trigger gok_hold_2 hold_allowed
+		trigger gok_hold_3 hold_allowed
+
+		setstate gok_hold_1 default
+		setstate gok_hold_2 default
+		setstate gok_hold_3 default
+	}
+}
+
+// vasthouden-knop
+// accum 0 = vasthouden mogelijk? (0=nee, 1=ja)
+gok_hold_1
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 1
+	}
+	activate
+	{
+		globalaccum 2 abort_if_greater_than 1
+		globalaccum 2 set 1
+
+		accum 0 abort_if_equal 0
+		trigger gok_rol_1 hold_on
+
+//		remapshader "textures/UJE_00/uje_cancel" "textures/UJE_00/uje_cancel_light"
+		remapshader "textures/UJE_00/uje_hold1" "textures/UJE_00/uje_hold1_light"
+		remapshaderflush
+
+		setstate gok_hold_1 invisible
+		setstate gok_herstel default
+	}
+	trigger hold_allowed
+	{
+		accum 0 set 1
+	}
+	trigger hold_not_allowed
+	{
+		accum 0 set 0
+	}
+}
+gok_hold_2
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 1
+	}
+	activate
+	{
+		globalaccum 2 abort_if_greater_than 1
+		globalaccum 2 set 1
+
+		accum 0 abort_if_equal 0
+		trigger gok_rol_2 hold_on
+
+//		remapshader "textures/UJE_00/uje_cancel" "textures/UJE_00/uje_cancel_light"
+		remapshader "textures/UJE_00/uje_hold2" "textures/UJE_00/uje_hold2_light"
+		remapshaderflush
+
+		setstate gok_hold_2 invisible
+		setstate gok_herstel default
+	}
+	trigger hold_allowed
+	{
+		accum 0 set 1
+	}
+	trigger hold_not_allowed
+	{
+		accum 0 set 0
+	}
+}
+gok_hold_3
+{
+	spawn
+	{
+		wait 100
+		accum 0 set 1
+	}
+	activate
+	{
+		globalaccum 2 abort_if_greater_than 1
+		globalaccum 2 set 1
+
+		accum 0 abort_if_equal 0
+		trigger gok_rol_3 hold_on
+
+//		remapshader "textures/UJE_00/uje_cancel" "textures/UJE_00/uje_cancel_light"
+		remapshader "textures/UJE_00/uje_hold3" "textures/UJE_00/uje_hold3_light"
+		remapshaderflush
+
+		setstate gok_hold_3 invisible
+		setstate gok_herstel default
+	}
+	trigger hold_allowed
+	{
+		accum 0 set 1
+	}
+	trigger hold_not_allowed
+	{
+		accum 0 set 0
+	}
+}
+gok_herstel
+{
+	spawn
+	{
+		wait 100
+	}
+	activate
+	{
+		globalaccum 2 abort_if_not_equal 1
+		globalaccum 2 set 0
+
+		trigger gok_rol_1 hold_off
+		trigger gok_rol_2 hold_off
+		trigger gok_rol_3 hold_off
+
+//		remapshader "textures/UJE_00/uje_cancel" "textures/UJE_00/uje_cancel"
+		remapshader "textures/UJE_00/uje_hold1" "textures/UJE_00/uje_hold1"
+		remapshader "textures/UJE_00/uje_hold2" "textures/UJE_00/uje_hold2"
+		remapshader "textures/UJE_00/uje_hold3" "textures/UJE_00/uje_hold3"
+		remapshaderflush
+
+		setstate gok_hold_1 default
+		setstate gok_hold_2 default
+		setstate gok_hold_3 default
+		setstate gok_herstel invisible
+	}
+}
+
+//script_movers
+// accum 0 = stop draaien van rol? (0=nee, 1=ja)
+// accum 1 = waarde van het symbool in beeld (voor deze rol)
+// accum 2 = rol vast dmv hold-knop?? (0=nee, 1=ja)
+gok_rol_1
+{
+	spawn
+	{
+		wait 400
+		accum 0 set 0
+		accum 1 set 4
+		accum 2 set 0
+	}
+
+	trigger start
+	{
+		// rol vast? dan klaar..
+		accum 2 abort_if_equal 1
+
+		accum 0 set 0
+		trigger self run0
+	}
+
+
+	trigger stop
+	{
+		accum 0 set 1
+	}
+
+	// BAR7
+	trigger check_score_200
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 6
+		globalaccum 1 set 1
+	}
+	// 7
+	trigger check_score_100
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 7
+		globalaccum 1 set 1
+	}
+	// paarse druiven
+	trigger check_score_40
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 9
+		globalaccum 1 set 1
+	}
+	// klok
+	trigger check_score_20
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 2
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_3
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_3
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_4
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+
+	trigger hold_on
+	{
+		accum 2 set 1
+	}
+	trigger hold_off
+	{
+		accum 2 set 0
+	}
+
+	trigger run0
+	{
+		accum 0 abort_if_equal 1
+		faceangles -15 0 0 20
+		accum 1 set 2
+		trigger self run1
+	}
+	trigger run1
+	{
+		accum 0 abort_if_equal 1
+		faceangles -30 0 0 20
+		accum 1 set 3
+		trigger self run2
+	}
+	trigger run2
+	{
+		accum 0 abort_if_equal 1
+		faceangles -45 0 0 20
+		accum 1 set 11
+		trigger self run3
+	}
+	trigger run3
+	{
+		accum 0 abort_if_equal 1
+		faceangles -60 0 0 20
+		accum 1 set 4
+		trigger self run4
+	}
+	trigger run4
+	{
+		accum 0 abort_if_equal 1
+		faceangles -75 0 0 20
+		accum 1 set 2
+		trigger self run5
+	}
+	trigger run5
+	{
+		accum 0 abort_if_equal 1
+		faceangles -90 0 0 20
+		accum 1 set 10
+		trigger self run6
+	}
+	trigger run6
+	{
+		accum 0 abort_if_equal 1
+		faceangles -105 0 0 20
+		accum 1 set 4
+		trigger self run7
+	}
+	trigger run7
+	{
+		accum 0 abort_if_equal 1
+		faceangles -120 0 0 20
+		accum 1 set 11
+		trigger self run8
+	}
+	trigger run8
+	{
+		accum 0 abort_if_equal 1
+		faceangles -135 0 0 20
+		accum 1 set 9
+		trigger self run9
+	}
+	trigger run9
+	{
+		accum 0 abort_if_equal 1
+		faceangles -150 0 0 20
+		accum 1 set 10
+		trigger self run10
+	}
+	trigger run10
+	{
+		accum 0 abort_if_equal 1
+		faceangles -165 0 0 20
+		accum 1 set 4
+		trigger self run11
+	}
+	trigger run11
+	{
+		accum 0 abort_if_equal 1
+		faceangles -180 0 0 20
+		accum 1 set 8
+		trigger self run12
+	}
+	trigger run12
+	{
+		accum 0 abort_if_equal 1
+		faceangles -195 0 0 20
+		accum 1 set 7
+		trigger self run13
+	}
+	trigger run13
+	{
+		accum 0 abort_if_equal 1
+		faceangles -210 0 0 20
+		accum 1 set 4
+		trigger self run14
+	}
+	trigger run14
+	{
+		accum 0 abort_if_equal 1
+		faceangles -225 0 0 20
+		accum 1 set 1
+		trigger self run15
+	}
+	trigger run15
+	{
+		accum 0 abort_if_equal 1
+		faceangles -240 0 0 20
+		accum 1 set 3
+		trigger self run16
+	}
+	trigger run16
+	{
+		accum 0 abort_if_equal 1
+		faceangles -255 0 0 20
+		accum 1 set 6
+		trigger self run17
+	}
+	trigger run17
+	{
+		accum 0 abort_if_equal 1
+		faceangles -270 0 0 20
+		accum 1 set 5
+		trigger self run18
+	}
+	trigger run18
+	{
+		accum 0 abort_if_equal 1
+		faceangles -285 0 0 20
+		accum 1 set 4
+		trigger self run19
+	}
+	trigger run19
+	{
+		accum 0 abort_if_equal 1
+		faceangles -300 0 0 20
+		accum 1 set 3
+		trigger self run20
+	}
+	trigger run20
+	{
+		accum 0 abort_if_equal 1
+		faceangles -315 0 0 20
+		accum 1 set 2
+		trigger self run21
+	}
+	trigger run21
+	{
+		accum 0 abort_if_equal 1
+		faceangles -330 0 0 20
+		accum 1 set 1
+		trigger self run22
+	}
+	trigger run22
+	{
+		accum 0 abort_if_equal 1
+		faceangles -345 0 0 20
+		accum 1 set 10
+		trigger self run23
+	}
+	trigger run23
+	{
+		accum 0 abort_if_equal 1
+		faceangles -360 0 0 20
+		accum 1 set 4
+		trigger self run0
+	}
+}
+gok_rol_2
+{
+	spawn
+	{
+		wait 400
+		accum 0 set 0
+		accum 1 set 2
+		accum 2 set 0
+	}
+
+	trigger start
+	{
+		// rol vast? dan klaar..
+		accum 2 abort_if_equal 1
+
+		accum 0 set 0
+		trigger self run0
+	}
+
+	trigger stop
+	{
+		accum 0 set 1
+	}
+
+	trigger check_score_200
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 6
+		globalaccum 1 set 1
+	}
+	trigger check_score_100
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 7
+		globalaccum 1 set 1
+	}
+	trigger check_score_40
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 9
+		globalaccum 1 set 1
+	}
+	trigger check_score_20
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 2
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_3
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_3
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_4
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+
+	trigger hold_on
+	{
+		accum 2 set 1
+	}
+	trigger hold_off
+	{
+		accum 2 set 0
+	}
+
+	trigger run0
+	{
+		accum 0 abort_if_equal 1
+		faceangles -15 0 0 20
+		accum 1 set 6
+		trigger self run1
+	}
+	trigger run1
+	{
+		accum 0 abort_if_equal 1
+		faceangles -30 0 0 20
+		accum 1 set 1
+		trigger self run2
+	}
+	trigger run2
+	{
+		accum 0 abort_if_equal 1
+		faceangles -45 0 0 20
+		accum 1 set 3
+		trigger self run3
+	}
+	trigger run3
+	{
+		accum 0 abort_if_equal 1
+		faceangles -60 0 0 20
+		accum 1 set 4
+		trigger self run4
+	}
+	trigger run4
+	{
+		accum 0 abort_if_equal 1
+		faceangles -75 0 0 20
+		accum 1 set 2
+		trigger self run5
+	}
+	trigger run5
+	{
+		accum 0 abort_if_equal 1
+		faceangles -90 0 0 20
+		accum 1 set 11
+		trigger self run6
+	}
+	trigger run6
+	{
+		accum 0 abort_if_equal 1
+		faceangles -105 0 0 20
+		accum 1 set 10
+		trigger self run7
+	}
+	trigger run7
+	{
+		accum 0 abort_if_equal 1
+		faceangles -120 0 0 20
+		accum 1 set 4
+		trigger self run8
+	}
+	trigger run8
+	{
+		accum 0 abort_if_equal 1
+		faceangles -135 0 0 20
+		accum 1 set 7
+		trigger self run9
+	}
+	trigger run9
+	{
+		accum 0 abort_if_equal 1
+		faceangles -150 0 0 20
+		accum 1 set 11
+		trigger self run10
+	}
+	trigger run10
+	{
+		accum 0 abort_if_equal 1
+		faceangles -165 0 0 20
+		accum 1 set 3
+		trigger self run11
+	}
+	trigger run11
+	{
+		accum 0 abort_if_equal 1
+		faceangles -180 0 0 20
+		accum 1 set 4
+		trigger self run12
+	}
+	trigger run12
+	{
+		accum 0 abort_if_equal 1
+		faceangles -195 0 0 20
+		accum 1 set 11
+		trigger self run13
+	}
+	trigger run13
+	{
+		accum 0 abort_if_equal 1
+		faceangles -210 0 0 20
+		accum 1 set 5
+		trigger self run14
+	}
+	trigger run14
+	{
+		accum 0 abort_if_equal 1
+		faceangles -225 0 0 20
+		accum 1 set 9
+		trigger self run15
+	}
+	trigger run15
+	{
+		accum 0 abort_if_equal 1
+		faceangles -240 0 0 20
+		accum 1 set 4
+		trigger self run16
+	}
+	trigger run16
+	{
+		accum 0 abort_if_equal 1
+		faceangles -255 0 0 20
+		accum 1 set 1
+		trigger self run17
+	}
+	trigger run17
+	{
+		accum 0 abort_if_equal 1
+		faceangles -270 0 0 20
+		accum 1 set 10
+		trigger self run18
+	}
+	trigger run18
+	{
+		accum 0 abort_if_equal 1
+		faceangles -285 0 0 20
+		accum 1 set 4
+		trigger self run19
+	}
+	trigger run19
+	{
+		accum 0 abort_if_equal 1
+		faceangles -300 0 0 20
+		accum 1 set 3
+		trigger self run20
+	}
+	trigger run20
+	{
+		accum 0 abort_if_equal 1
+		faceangles -315 0 0 20
+		accum 1 set 1
+		trigger self run21
+	}
+	trigger run21
+	{
+		accum 0 abort_if_equal 1
+		faceangles -330 0 0 20
+		accum 1 set 4
+		trigger self run22
+	}
+	trigger run22
+	{
+		accum 0 abort_if_equal 1
+		faceangles -345 0 0 20
+		accum 1 set 10
+		trigger self run23
+	}
+	trigger run23
+	{
+		accum 0 abort_if_equal 1
+		faceangles -360 0 0 20
+		accum 1 set 2
+		trigger self run0
+	}
+}
+gok_rol_3
+{
+	spawn
+	{
+		wait 400
+		accum 0 set 0
+		accum 1 set 11
+		accum 2 set 0
+	}
+	trigger start
+	{
+		// rol vast? dan klaar..
+		accum 2 abort_if_equal 1
+
+		accum 0 set 0
+		trigger self run0
+	}
+
+	trigger stop
+	{
+		accum 0 set 1
+	}
+
+	trigger check_score_200
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 6
+		globalaccum 1 set 1
+	}
+	trigger check_score_100
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 7
+		globalaccum 1 set 1
+	}
+	trigger check_score_40
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 9
+		globalaccum 1 set 1
+	}
+	trigger check_score_20
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 2
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 1
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 11
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_16_3
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 3
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 10
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_2
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_12_3
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_0
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 4
+		globalaccum 1 set 1
+	}
+	trigger check_score_8_1
+	{
+		globalaccum 1 set 0
+		accum 0 abort_if_not_equal 8
+		globalaccum 1 set 1
+	}
+
+	trigger hold_on
+	{
+		accum 2 set 1
+	}
+	trigger hold_off
+	{
+		accum 2 set 0
+	}
+
+	trigger run0
+	{
+		accum 0 abort_if_equal 1
+		faceangles -15 0 0 20
+		accum 1 set 3
+		trigger self run1
+	}
+	trigger run1
+	{
+		accum 0 abort_if_equal 1
+		faceangles -30 0 0 20
+		accum 1 set 9
+		trigger self run2
+	}
+	trigger run2
+	{
+		accum 0 abort_if_equal 1
+		faceangles -45 0 0 20
+		accum 1 set 10
+		trigger self run3
+	}
+	trigger run3
+	{
+		accum 0 abort_if_equal 1
+		faceangles -60 0 0 20
+		accum 1 set 11
+		trigger self run4
+	}
+	trigger run4
+	{
+		accum 0 abort_if_equal 1
+		faceangles -75 0 0 20
+		accum 1 set 3
+		trigger self run5
+	}
+	trigger run5
+	{
+		accum 0 abort_if_equal 1
+		faceangles -90 0 0 20
+		accum 1 set 9
+		trigger self run6
+	}
+	trigger run6
+	{
+		accum 0 abort_if_equal 1
+		faceangles -105 0 0 20
+		accum 1 set 1
+		trigger self run7
+	}
+	trigger run7
+	{
+		accum 0 abort_if_equal 1
+		faceangles -120 0 0 20
+		accum 1 set 2
+		trigger self run8
+	}
+	trigger run8
+	{
+		accum 0 abort_if_equal 1
+		faceangles -135 0 0 20
+		accum 1 set 10
+		trigger self run9
+	}
+	trigger run9
+	{
+		accum 0 abort_if_equal 1
+		faceangles -150 0 0 20
+		accum 1 set 9
+		trigger self run10
+	}
+	trigger run10
+	{
+		accum 0 abort_if_equal 1
+		faceangles -165 0 0 20
+		accum 1 set 3
+		trigger self run11
+	}
+	trigger run11
+	{
+		accum 0 abort_if_equal 1
+		faceangles -180 0 0 20
+		accum 1 set 1
+		trigger self run12
+	}
+	trigger run12
+	{
+		accum 0 abort_if_equal 1
+		faceangles -195 0 0 20
+		accum 1 set 4
+		trigger self run13
+	}
+	trigger run13
+	{
+		accum 0 abort_if_equal 1
+		faceangles -210 0 0 20
+		accum 1 set 2
+		trigger self run14
+	}
+	trigger run14
+	{
+		accum 0 abort_if_equal 1
+		faceangles -225 0 0 20
+		accum 1 set 7
+		trigger self run15
+	}
+	trigger run15
+	{
+		accum 0 abort_if_equal 1
+		faceangles -240 0 0 20
+		accum 1 set 5
+		trigger self run16
+	}
+	trigger run16
+	{
+		accum 0 abort_if_equal 1
+		faceangles -255 0 0 20
+		accum 1 set 1
+		trigger self run17
+	}
+	trigger run17
+	{
+		accum 0 abort_if_equal 1
+		faceangles -270 0 0 20
+		accum 1 set 2
+		trigger self run18
+	}
+	trigger run18
+	{
+		accum 0 abort_if_equal 1
+		faceangles -285 0 0 20
+		accum 1 set 11
+		trigger self run19
+	}
+	trigger run19
+	{
+		accum 0 abort_if_equal 1
+		faceangles -300 0 0 20
+		accum 1 set 7
+		trigger self run20
+	}
+	trigger run20
+	{
+		accum 0 abort_if_equal 1
+		faceangles -315 0 0 20
+		accum 1 set 4
+		trigger self run21
+	}
+	trigger run21
+	{
+		accum 0 abort_if_equal 1
+		faceangles -330 0 0 20
+		accum 1 set 6
+		trigger self run22
+	}
+	trigger run22
+	{
+		accum 0 abort_if_equal 1
+		faceangles -345 0 0 20
+		accum 1 set 10
+		trigger self run23
+	}
+	trigger run23
+	{
+		accum 0 abort_if_equal 1
+		faceangles -360 0 0 20
+		accum 1 set 11
+		trigger self run0
+	}
+}
+
+
+//=============================================================================
+//=== silence.
+//=== starting with 8 churchbells (20:00),
+//=== followed by "the last post" and 2 minutes of silence..
+//=============================================================================
+
+//script tbv. de target_script_triggers
+respect_soldier
+{
+	//  tbv. de trigger_multiples
+	trigger in_trigger
+	{
+		trigger button_soldier in_trigger
+	}
+
+	// tbv. de func_invisible_user
+	trigger button_pressed
+	{
+		trigger button_soldier button_pressed
+	}
+
+	// tbv. de func_timers
+	trigger counter
+	{
+		trigger button_soldier counter
+	}
+}
+
+respect_medic
+{
+	trigger in_trigger
+	{
+		trigger button_medic in_trigger
+	}
+
+	trigger button_pressed
+	{
+		trigger button_medic button_pressed
+	}
+
+	trigger counter
+	{
+		trigger button_medic counter
+	}
+}
+
+respect_engineer
+{
+	trigger in_trigger
+	{
+		trigger button_engineer in_trigger
+	}
+
+	trigger button_pressed
+	{
+		trigger button_engineer button_pressed
+	}
+
+	trigger counter
+	{
+		trigger button_engineer counter
+	}
+}
+
+respect_fieldops
+{
+	trigger in_trigger
+	{
+		trigger button_fieldops in_trigger
+	}
+
+	trigger button_pressed
+	{
+		trigger button_fieldops button_pressed
+	}
+
+	trigger counter
+	{
+		trigger button_fieldops counter
+	}
+}
+
+respect_covertops
+{
+	trigger in_trigger
+	{
+		trigger button_covertops in_trigger
+	}
+
+	trigger button_pressed
+	{
+		trigger button_covertops button_pressed
+	}
+
+	trigger counter
+	{
+		trigger button_covertops counter
+	}
+}
+
+
+
+//script_movers
+// accum 0 = speler met betreffende functie is in de trigger (0=nee, 1=ja)
+// accum 1 = speler drukt op de knop (0=nee, 1=ja)	//! inmiddels niet meer in gebruik
+// accum 2 = counter tbv. deactivering knop na x seconden
+// globalaccum 3 = 5 bits voor markering "knoppen nog actief?" (0=nee, 1=ja)
+//                 bit0 = knop soldier
+//                 bit1 = knop medic
+//                 bit2 = knop engineer
+//                 bit3 = knop fieldops
+//                 bit4 = knop covertops
+button_soldier
+{
+	spawn
+	{
+		wait 500
+
+		accum 0 set 0
+		accum 1 set 0
+		accum 2 set 0
+
+		trigger self button_out
+	}
+
+	// knoppen drukken (func_button != :-))
+	trigger button_in
+	{
+		// knop al ingedrukt??
+		globalaccum 3 abort_if_bitset 0
+
+		// knop wordt als actief markeren
+		globalaccum 3 bitset 0
+
+		playsound sound/movers/switches/switch_02.wav
+		gotomarker button_soldier_in 100 wait
+
+		// licht aan
+		setstate dark_soldier invisible
+		setstate light_soldier default
+
+//		wm_announce "a soldier activated the ceremony switch"
+
+		trigger game_manager show_respect
+	}
+	trigger button_out
+	{
+		// knop al uitgedrukt??
+		globalaccum 3 abort_if_not_bitset 0
+
+		// knop als inactief markeren
+		globalaccum 3 bitreset 0
+
+		playsound sound/movers/switches/switch.wav
+		gotomarker button_soldier_out 100 wait
+
+		// licht uit
+		setstate light_soldier invisible
+		setstate dark_soldier default
+	}
+
+	trigger in_trigger
+	{
+		// bit 6 = markering: "ceremony is bezig" (1=ja, 0=nee)
+//		globalaccum 3 abort_if_greater_than 32
+		globalaccum 3 abort_if_bitset 6			// ceremonie al bezig??
+
+		// reset de counter
+		accum 2 set 0
+
+		accum 0 abort_if_equal 1			// trigger al actief??
+		// iemand heeft de trigger geactiveerd
+		accum 0 set 1
+
+//		wm_announce "a soldier activated the ceremony area"
+	}
+
+	trigger button_pressed
+	{
+		// ceremonie al bezig??
+		globalaccum 3 abort_if_bitset 6
+
+		// is er een speler met betreffende functie in de (actieve) trigger??
+		accum 0 abort_if_equal 0
+
+		// de knop indrukken
+		trigger self button_in
+	}
+
+	trigger counter
+	{
+		accum 0 abort_if_equal 0	//niemand in trigger??
+		accum 2 abort_if_equal 2	//counter al op 2??
+		accum 2 inc 1			//verhoog counter
+		accum 2 abort_if_less_than 2	//stoppen als counter nu nog <2
+
+//		wm_announce "soldier ceremony area deactivated"
+
+		// trigger zone de-activeren
+		accum 0 set 0
+
+		// knop uitdrukken
+		trigger self button_out
+	}
+}
+button_medic
+{
+	spawn
+	{
+		wait 500
+
+		accum 0 set 0
+		accum 1 set 0
+		accum 2 set 0
+
+		trigger self button_out
+	}
+
+	// tbv de script_mover knoppen
+	trigger button_in
+	{
+		globalaccum 3 abort_if_bitset 1
+
+		// knop wordt als actief markeren
+		globalaccum 3 bitset 1
+
+		playsound sound/movers/switches/switch_02.wav
+		gotomarker button_medic_in 100 wait
+
+		// licht aan
+		setstate dark_medic invisible
+		setstate light_medic default
+
+//		wm_announce "a medic activated the ceremony switch"
+
+		trigger game_manager show_respect
+	}
+	trigger button_out
+	{
+		globalaccum 3 abort_if_not_bitset 1
+
+		// knop als inactief markeren
+		globalaccum 3 bitreset 1
+
+		playsound sound/movers/switches/switch.wav
+		gotomarker button_medic_out 100 wait
+
+		// licht uit
+		setstate light_medic invisible
+		setstate dark_medic default
+	}
+
+	trigger in_trigger
+	{
+		globalaccum 3 abort_if_bitset 6
+
+		// reset de counter
+		accum 2 set 0
+
+		accum 0 abort_if_equal 1
+		// iemand heeft de trigger geactiveerd
+		accum 0 set 1
+
+//		wm_announce "a medic activated the ceremony area"
+	}
+
+	trigger button_pressed
+	{
+		globalaccum 3 abort_if_bitset 6
+		accum 0 abort_if_equal 0
+
+		// de knop indrukken
+		trigger self button_in
+	}
+
+	trigger counter
+	{
+		accum 0 abort_if_equal 0	//niemand in trigger??
+		accum 2 abort_if_equal 2	//counter al op 2??
+		accum 2 inc 1			//verhoog counter
+		accum 2 abort_if_less_than 2	//stoppen als counter nu nog <2
+
+//		wm_announce "medic ceremony area deactivated"
+
+		// trigger zone de-activeren
+		accum 0 set 0
+
+		// knop uitdrukken
+		trigger self button_out
+	}
+}
+button_engineer
+{
+	spawn
+	{
+		wait 500
+
+		accum 0 set 0
+		accum 1 set 0
+		accum 2 set 0
+
+		trigger self button_out
+	}
+
+	// tbv de script_mover knoppen
+	trigger button_in
+	{
+		globalaccum 3 abort_if_bitset 2
+
+		// knop wordt als actief gemarkeerd
+		globalaccum 3 bitset 2
+
+		playsound sound/movers/switches/switch_02.wav
+		gotomarker button_engineer_in 100 wait
+
+		// licht aan
+		setstate dark_engineer invisible
+		setstate light_engineer default
+
+//		wm_announce "an engineer activated the ceremony switch"
+
+		trigger game_manager show_respect
+	}
+	trigger button_out
+	{
+		globalaccum 3 abort_if_not_bitset 2
+
+		// knop als inactief markeren
+		globalaccum 3 bitreset 2
+
+		playsound sound/movers/switches/switch.wav
+		gotomarker button_engineer_out 100 wait
+
+		// licht uit
+		setstate light_engineer invisible
+		setstate dark_engineer default
+	}
+
+	//
+	trigger in_trigger
+	{
+		globalaccum 3 abort_if_bitset 6
+
+		// reset de counter
+		accum 2 set 0
+
+		accum 0 abort_if_equal 1
+		// iemand heeft de trigger geactiveerd
+		accum 0 set 1
+
+//		wm_announce "an engineer activated the ceremony area"
+	}
+
+	//
+	trigger button_pressed
+	{
+		globalaccum 3 abort_if_bitset 6
+		accum 0 abort_if_equal 0
+
+		// de knop indrukken
+		trigger self button_in
+	}
+
+	//
+	trigger counter
+	{
+		accum 0 abort_if_equal 0	//niemand in trigger??
+		accum 2 abort_if_equal 2	//counter al op 2??
+		accum 2 inc 1			//verhoog counter
+		accum 2 abort_if_less_than 2	//stoppen als counter nu nog <2
+
+//		wm_announce "engineer ceremony area deactivated"
+
+		// trigger zone de-activeren
+		accum 0 set 0
+
+		// knop uitdrukken
+		trigger self button_out
+	}
+}
+button_fieldops
+{
+	spawn
+	{
+		wait 500
+
+		accum 0 set 0
+		accum 1 set 0
+		accum 2 set 0
+
+		trigger self button_out
+	}
+
+	// tbv de script_mover knoppen
+	trigger button_in
+	{
+		globalaccum 3 abort_if_bitset 3
+
+		// knop wordt als actief gemarkeerd
+		globalaccum 3 bitset 3
+
+		playsound sound/movers/switches/switch_02.wav
+		gotomarker button_fieldops_in 100 wait
+
+		// licht aan
+		setstate dark_fieldops invisible
+		setstate light_fieldops default
+
+//		wm_announce "a field-ops. activated the ceremony switch"
+
+		trigger game_manager show_respect
+	}
+	trigger button_out
+	{
+		globalaccum 3 abort_if_not_bitset 3
+
+		// knop als inactief markeren
+		globalaccum 3 bitreset 3
+
+		playsound sound/movers/switches/switch.wav
+		gotomarker button_fieldops_out 100 wait
+
+		// licht uit
+		setstate light_fieldops invisible
+		setstate dark_fieldops default
+	}
+
+	trigger in_trigger
+	{
+		globalaccum 3 abort_if_bitset 6
+
+		// reset de counter
+		accum 2 set 0
+
+		accum 0 abort_if_equal 1
+		// iemand heeft de trigger geactiveerd
+		accum 0 set 1
+
+//		wm_announce "a field-ops. activated the ceremony area"
+	}
+
+	trigger button_pressed
+	{
+		globalaccum 3 abort_if_bitset 6
+		accum 0 abort_if_equal 0
+
+		// de knop indrukken
+		trigger self button_in
+	}
+
+	trigger counter
+	{
+		accum 0 abort_if_equal 0	//niemand in trigger??
+		accum 2 abort_if_equal 2	//counter al op 2??
+		accum 2 inc 1			//verhoog counter
+		accum 2 abort_if_less_than 2	//stoppen als counter nu nog <2
+
+//		wm_announce "fieldops ceremony area deactivated"
+
+		// trigger zone de-activeren
+		accum 0 set 0
+
+		// knop uitdrukken
+		trigger self button_out
+	}
+}
+button_covertops
+{
+	spawn
+	{
+		wait 500
+
+		accum 0 set 0
+		accum 1 set 0
+		accum 2 set 0
+
+		trigger self button_out
+	}
+
+	// tbv de script_mover knoppen
+	trigger button_in
+	{
+		globalaccum 3 abort_if_bitset 4
+
+		// knop wordt als actief gemarkeerd
+		globalaccum 3 bitset 4
+
+		playsound sound/movers/switches/switch_02.wav
+		gotomarker button_covertops_in 100 wait
+
+		// licht aan
+		setstate dark_covertops invisible
+		setstate light_covertops default
+
+//		wm_announce "a covert-ops. activated the ceremony switch"
+
+		// test of de ceromonie mag beginnen
+		trigger game_manager show_respect
+	}
+	trigger button_out
+	{
+		globalaccum 3 abort_if_not_bitset 4
+
+		// knop als inactief markeren
+		globalaccum 3 bitreset 4
+
+		playsound sound/movers/switches/switch.wav
+		gotomarker button_covertops_out 100 wait
+
+		// licht uit
+		setstate light_covertops invisible
+		setstate dark_covertops default
+	}
+
+	trigger in_trigger
+	{
+		globalaccum 3 abort_if_bitset 6
+
+		// reset de counter
+		accum 2 set 0
+
+		accum 0 abort_if_equal 1
+		// iemand heeft de trigger geactiveerd
+		accum 0 set 1
+
+//		wm_announce "a covert-ops. activated the ceremony area"
+	}
+
+	trigger button_pressed
+	{
+		globalaccum 3 abort_if_bitset 6
+		accum 0 abort_if_equal 0
+
+		// de knop indrukken
+		trigger self button_in
+	}
+
+	trigger counter
+	{
+		accum 0 abort_if_equal 0	//niemand in trigger??
+		accum 2 abort_if_equal 2	//counter al op 2??
+		accum 2 inc 1			//verhoog counter
+		accum 2 abort_if_less_than 2	//stoppen als counter nu nog <2
+
+//		wm_announce "covertops ceremony area deactivated"
+
+		// trigger zone de-activeren
+		accum 0 set 0
+
+		// knop uitdrukken
+		trigger self button_out
+	}
+}
+
+
+// de script_movers voor de lichten die aan/uit gaan als de knop wordt in/uit-gedrukt
+light_soldier
+{
+	spawn
+	{
+		wait 100
+		setposition dark_soldier
+		setstate light_soldier invisible
+	}
+}
+light_medic
+{
+	spawn
+	{
+		wait 100
+		setposition dark_medic
+		setstate light_medic invisible
+	}
+}
+light_engineer
+{
+	spawn
+	{
+		wait 100
+		setposition dark_engineer
+		setstate light_engineer invisible
+	}
+}
+light_fieldops
+{
+	spawn
+	{
+		wait 100
+		setposition dark_fieldops
+		setstate light_fieldops invisible
+	}
+}
+light_covertops
+{
+	spawn
+	{
+		wait 100
+		setposition dark_covertops
+		setstate light_covertops invisible
+	}
+}
+
+
+//=============================================================================
+//=== Kerkklok
+//=============================================================================
+//script tbv. de target_script_triggers
+stopwatch_script
+{
+	trigger run
+	{
+		trigger stopwatch counter
+	}
+}
+
+//script_mover
+// accum 0 = klok loopt?? (0=nee, 1=ja)
+// accum 1 = tijd (seconden)
+stopwatch
+{
+	spawn
+	{
+		wait 50
+		accum 0 set 1
+		trigger self reset
+	}
+
+	trigger reset
+	{
+		accum 1 set 0
+		trigger self wijzer
+	}
+	trigger start
+	{
+		accum 0 set 1
+	}
+	trigger stop
+	{
+		accum 0 set 0
+	}
+	trigger counter
+	{
+		// loopt de klok wel?
+//		accum 0 abort_if_equal 0
+		trigger self increase
+		trigger self wijzer
+	}
+
+	trigger increase
+	{
+		accum 1 inc 1
+		accum 1 abort_if_less_than 60
+		accum 1 set 0				// seconden op 0
+		trigger stopwatch_minutes increase	// minuten verhogen
+		trigger stopwatch_minutes wijzer
+	}
+	trigger wijzer
+	{
+		// de seconde wijzer
+		accum 1 trigger_if_equal 0 stopwatch sec_0
+		accum 1 trigger_if_equal 1 stopwatch sec_1
+		accum 1 trigger_if_equal 2 stopwatch sec_2
+		accum 1 trigger_if_equal 3 stopwatch sec_3
+		accum 1 trigger_if_equal 4 stopwatch sec_4
+		accum 1 trigger_if_equal 5 stopwatch sec_5
+		accum 1 trigger_if_equal 6 stopwatch sec_6
+		accum 1 trigger_if_equal 7 stopwatch sec_7
+		accum 1 trigger_if_equal 8 stopwatch sec_8
+		accum 1 trigger_if_equal 9 stopwatch sec_9
+		accum 1 trigger_if_equal 10 stopwatch sec_10
+		accum 1 trigger_if_equal 11 stopwatch sec_11
+		accum 1 trigger_if_equal 12 stopwatch sec_12
+		accum 1 trigger_if_equal 13 stopwatch sec_13
+		accum 1 trigger_if_equal 14 stopwatch sec_14
+		accum 1 trigger_if_equal 15 stopwatch sec_15
+		accum 1 trigger_if_equal 16 stopwatch sec_16
+		accum 1 trigger_if_equal 17 stopwatch sec_17
+		accum 1 trigger_if_equal 18 stopwatch sec_18
+		accum 1 trigger_if_equal 19 stopwatch sec_19
+		accum 1 trigger_if_equal 20 stopwatch sec_20
+		accum 1 trigger_if_equal 21 stopwatch sec_21
+		accum 1 trigger_if_equal 22 stopwatch sec_22
+		accum 1 trigger_if_equal 23 stopwatch sec_23
+		accum 1 trigger_if_equal 24 stopwatch sec_24
+		accum 1 trigger_if_equal 25 stopwatch sec_25
+		accum 1 trigger_if_equal 26 stopwatch sec_26
+		accum 1 trigger_if_equal 27 stopwatch sec_27
+		accum 1 trigger_if_equal 28 stopwatch sec_28
+		accum 1 trigger_if_equal 29 stopwatch sec_29
+		accum 1 trigger_if_equal 30 stopwatch sec_30
+		accum 1 trigger_if_equal 31 stopwatch sec_31
+		accum 1 trigger_if_equal 32 stopwatch sec_32
+		accum 1 trigger_if_equal 33 stopwatch sec_33
+		accum 1 trigger_if_equal 34 stopwatch sec_34
+		accum 1 trigger_if_equal 35 stopwatch sec_35
+		accum 1 trigger_if_equal 36 stopwatch sec_36
+		accum 1 trigger_if_equal 37 stopwatch sec_37
+		accum 1 trigger_if_equal 38 stopwatch sec_38
+		accum 1 trigger_if_equal 39 stopwatch sec_39
+		accum 1 trigger_if_equal 40 stopwatch sec_40
+		accum 1 trigger_if_equal 41 stopwatch sec_41
+		accum 1 trigger_if_equal 42 stopwatch sec_42
+		accum 1 trigger_if_equal 43 stopwatch sec_43
+		accum 1 trigger_if_equal 44 stopwatch sec_44
+		accum 1 trigger_if_equal 45 stopwatch sec_45
+		accum 1 trigger_if_equal 46 stopwatch sec_46
+		accum 1 trigger_if_equal 47 stopwatch sec_47
+		accum 1 trigger_if_equal 48 stopwatch sec_48
+		accum 1 trigger_if_equal 49 stopwatch sec_49
+		accum 1 trigger_if_equal 50 stopwatch sec_50
+		accum 1 trigger_if_equal 51 stopwatch sec_51
+		accum 1 trigger_if_equal 52 stopwatch sec_52
+		accum 1 trigger_if_equal 53 stopwatch sec_53
+		accum 1 trigger_if_equal 54 stopwatch sec_54
+		accum 1 trigger_if_equal 55 stopwatch sec_55
+		accum 1 trigger_if_equal 56 stopwatch sec_56
+		accum 1 trigger_if_equal 57 stopwatch sec_57
+		accum 1 trigger_if_equal 58 stopwatch sec_58
+		accum 1 trigger_if_equal 59 stopwatch sec_59
+		accum 1 trigger_if_equal 60 stopwatch sec_60
+	}
+
+	//de seconde wijzer
+	trigger sec_0
+	{
+		//faceangles <pitch> <yaw> <roll> <duration|gototime> [accel|deccel]
+		faceangles 0 0 0 1
+	}
+	trigger sec_1
+	{
+		faceangles 0 0 -6 1
+	}
+	trigger sec_2
+	{
+		faceangles 0 0 -12 1
+	}
+	trigger sec_3
+	{
+		faceangles 0 0 -18 1
+	}
+	trigger sec_4
+	{
+		faceangles 0 0 -24 1
+	}
+	trigger sec_5
+	{
+		faceangles 0 0 -30 1
+	}
+	trigger sec_6
+	{
+		faceangles 0 0 -36 1
+	}
+	trigger sec_7
+	{
+		faceangles 0 0 -42 1
+	}
+	trigger sec_8
+	{
+		faceangles 0 0 -48 1
+	}
+	trigger sec_9
+	{
+		faceangles 0 0 -54 1
+	}
+	trigger sec_10
+	{
+		faceangles 0 0 -60 1
+	}
+	trigger sec_11
+	{
+		faceangles 0 0 -66 1
+	}
+	trigger sec_12
+	{
+		faceangles 0 0 -72 1
+	}
+	trigger sec_13
+	{
+		faceangles 0 0 -78 1
+	}
+	trigger sec_14
+	{
+		faceangles 0 0 -84 1
+	}
+	trigger sec_15
+	{
+		faceangles 0 0 -90 1
+	}
+	trigger sec_16
+	{
+		faceangles 0 0 -96 1
+	}
+	trigger sec_17
+	{
+		faceangles 0 0 -102 1
+	}
+	trigger sec_18
+	{
+		faceangles 0 0 -108 1
+	}
+	trigger sec_19
+	{
+		faceangles 0 0 -114 1
+	}
+	trigger sec_20
+	{
+		faceangles 0 0 -120 1
+	}
+	trigger sec_21
+	{
+		faceangles 0 0 -126 1
+	}
+	trigger sec_22
+	{
+		faceangles 0 0 -132 1
+	}
+	trigger sec_23
+	{
+		faceangles 0 0 -138 1
+	}
+	trigger sec_24
+	{
+		faceangles 0 0 -144 1
+	}
+	trigger sec_25
+	{
+		faceangles 0 0 -150 1
+	}
+	trigger sec_26
+	{
+		faceangles 0 0 -156 1
+	}
+	trigger sec_27
+	{
+		faceangles 0 0 -162 1
+	}
+	trigger sec_28
+	{
+		faceangles 0 0 -168 1
+	}
+	trigger sec_29
+	{
+		faceangles 0 0 -174 1
+	}
+	trigger sec_30
+	{
+		faceangles 0 0 -180 1
+	}
+	trigger sec_31
+	{
+		faceangles 0 0 -186 1
+	}
+	trigger sec_32
+	{
+		faceangles 0 0 -192 1
+	}
+	trigger sec_33
+	{
+		faceangles 0 0 -198 1
+	}
+	trigger sec_34
+	{
+		faceangles 0 0 -204 1
+	}
+	trigger sec_35
+	{
+		faceangles 0 0 -210 1
+	}
+	trigger sec_36
+	{
+		faceangles 0 0 -216 1
+	}
+	trigger sec_37
+	{
+		faceangles 0 0 -222 1
+	}
+	trigger sec_38
+	{
+		faceangles 0 0 -228 1
+	}
+	trigger sec_39
+	{
+		faceangles 0 0 -234 1
+	}
+	trigger sec_40
+	{
+		faceangles 0 0 -240 1
+	}
+	trigger sec_41
+	{
+		faceangles 0 0 -246 1
+	}
+	trigger sec_42
+	{
+		faceangles 0 0 -252 1
+	}
+	trigger sec_43
+	{
+		faceangles 0 0 -258 1
+	}
+	trigger sec_44
+	{
+		faceangles 0 0 -264 1
+	}
+	trigger sec_45
+	{
+		faceangles 0 0 -270 1
+	}
+	trigger sec_46
+	{
+		faceangles 0 0 -276 1
+	}
+	trigger sec_47
+	{
+		faceangles 0 0 -282 1
+	}
+	trigger sec_48
+	{
+		faceangles 0 0 -288 1
+	}
+	trigger sec_49
+	{
+		faceangles 0 0 -294 1
+	}
+	trigger sec_50
+	{
+		faceangles 0 0 -300 1
+	}
+	trigger sec_51
+	{
+		faceangles 0 0 -306 1
+	}
+	trigger sec_52
+	{
+		faceangles 0 0 -312 1
+	}
+	trigger sec_53
+	{
+		faceangles 0 0 -318 1
+	}
+	trigger sec_54
+	{
+		faceangles 0 0 -324 1
+	}
+	trigger sec_55
+	{
+		faceangles 0 0 -330 1
+	}
+	trigger sec_56
+	{
+		faceangles 0 0 -336 1
+	}
+	trigger sec_57
+	{
+		faceangles 0 0 -342 1
+	}
+	trigger sec_58
+	{
+		faceangles 0 0 -348 1
+	}
+	trigger sec_59
+	{
+		faceangles 0 0 -354 1
+	}
+}
+
+// accum 2 = minutes
+stopwatch_minutes
+{
+	spawn
+	{
+		accum 2 set 0
+		trigger self min_0
+	}
+	trigger reset
+	{
+		accum 2 set 0
+		trigger self wijzer
+	}
+
+	trigger increase
+	{
+		accum 2 inc 1
+		accum 2 abort_if_less_than 60
+		accum 2 set 0				// minuten op 0
+		trigger stopwatch_hours increase	// uren verhogen
+		trigger stopwatch_hours wijzer
+	}
+	trigger wijzer
+	{
+		// de minuten wijzer
+		accum 2 trigger_if_equal 0 stopwatch_minutes min_0
+		accum 2 trigger_if_equal 1 stopwatch_minutes min_1
+		accum 2 trigger_if_equal 2 stopwatch_minutes min_2
+		accum 2 trigger_if_equal 3 stopwatch_minutes min_3
+		accum 2 trigger_if_equal 4 stopwatch_minutes min_4
+		accum 2 trigger_if_equal 5 stopwatch_minutes min_5
+		accum 2 trigger_if_equal 6 stopwatch_minutes min_6
+		accum 2 trigger_if_equal 7 stopwatch_minutes min_7
+		accum 2 trigger_if_equal 8 stopwatch_minutes min_8
+		accum 2 trigger_if_equal 9 stopwatch_minutes min_9
+		accum 2 trigger_if_equal 10 stopwatch_minutes min_10
+		accum 2 trigger_if_equal 11 stopwatch_minutes min_11
+		accum 2 trigger_if_equal 12 stopwatch_minutes min_12
+		accum 2 trigger_if_equal 13 stopwatch_minutes min_13
+		accum 2 trigger_if_equal 14 stopwatch_minutes min_14
+		accum 2 trigger_if_equal 15 stopwatch_minutes min_15
+		accum 2 trigger_if_equal 16 stopwatch_minutes min_16
+		accum 2 trigger_if_equal 17 stopwatch_minutes min_17
+		accum 2 trigger_if_equal 18 stopwatch_minutes min_18
+		accum 2 trigger_if_equal 19 stopwatch_minutes min_19
+		accum 2 trigger_if_equal 20 stopwatch_minutes min_20
+		accum 2 trigger_if_equal 21 stopwatch_minutes min_21
+		accum 2 trigger_if_equal 22 stopwatch_minutes min_22
+		accum 2 trigger_if_equal 23 stopwatch_minutes min_23
+		accum 2 trigger_if_equal 24 stopwatch_minutes min_24
+		accum 2 trigger_if_equal 25 stopwatch_minutes min_25
+		accum 2 trigger_if_equal 26 stopwatch_minutes min_26
+		accum 2 trigger_if_equal 27 stopwatch_minutes min_27
+		accum 2 trigger_if_equal 28 stopwatch_minutes min_28
+		accum 2 trigger_if_equal 29 stopwatch_minutes min_29
+		accum 2 trigger_if_equal 30 stopwatch_minutes min_30
+		accum 2 trigger_if_equal 31 stopwatch_minutes min_31
+		accum 2 trigger_if_equal 32 stopwatch_minutes min_32
+		accum 2 trigger_if_equal 33 stopwatch_minutes min_33
+		accum 2 trigger_if_equal 34 stopwatch_minutes min_34
+		accum 2 trigger_if_equal 35 stopwatch_minutes min_35
+		accum 2 trigger_if_equal 36 stopwatch_minutes min_36
+		accum 2 trigger_if_equal 37 stopwatch_minutes min_37
+		accum 2 trigger_if_equal 38 stopwatch_minutes min_38
+		accum 2 trigger_if_equal 39 stopwatch_minutes min_39
+		accum 2 trigger_if_equal 40 stopwatch_minutes min_40
+		accum 2 trigger_if_equal 41 stopwatch_minutes min_41
+		accum 2 trigger_if_equal 42 stopwatch_minutes min_42
+		accum 2 trigger_if_equal 43 stopwatch_minutes min_43
+		accum 2 trigger_if_equal 44 stopwatch_minutes min_44
+		accum 2 trigger_if_equal 45 stopwatch_minutes min_45
+		accum 2 trigger_if_equal 46 stopwatch_minutes min_46
+		accum 2 trigger_if_equal 47 stopwatch_minutes min_47
+		accum 2 trigger_if_equal 48 stopwatch_minutes min_48
+		accum 2 trigger_if_equal 49 stopwatch_minutes min_49
+		accum 2 trigger_if_equal 50 stopwatch_minutes min_50
+		accum 2 trigger_if_equal 51 stopwatch_minutes min_51
+		accum 2 trigger_if_equal 52 stopwatch_minutes min_52
+		accum 2 trigger_if_equal 53 stopwatch_minutes min_53
+		accum 2 trigger_if_equal 54 stopwatch_minutes min_54
+		accum 2 trigger_if_equal 55 stopwatch_minutes min_55
+		accum 2 trigger_if_equal 56 stopwatch_minutes min_56
+		accum 2 trigger_if_equal 57 stopwatch_minutes min_57
+		accum 2 trigger_if_equal 58 stopwatch_minutes min_58
+		accum 2 trigger_if_equal 59 stopwatch_minutes min_59
+	}
+
+	//de minuten wijzer
+	trigger min_0
+	{
+		//faceangles <pitch> <yaw> <roll> <duration|gototime> [accel|deccel]
+		faceangles 0 0 0 1
+
+		// de uur-wijzer per kwartier
+		trigger stopwatch_hours quarter_0
+		trigger stopwatch_hours wijzer
+	}
+	trigger min_1
+	{
+		faceangles 0 0 -6 1
+	}
+	trigger min_2
+	{
+		faceangles 0 0 -12 1
+	}
+	trigger min_3
+	{
+		faceangles 0 0 -18 1
+	}
+	trigger min_4
+	{
+		faceangles 0 0 -24 1
+	}
+	trigger min_5
+	{
+		faceangles 0 0 -30 1
+	}
+	trigger min_6
+	{
+		faceangles 0 0 -36 1
+	}
+	trigger min_7
+	{
+		faceangles 0 0 -42 1
+	}
+	trigger min_8
+	{
+		faceangles 0 0 -48 1
+	}
+	trigger min_9
+	{
+		faceangles 0 0 -54 1
+	}
+	trigger min_10
+	{
+		faceangles 0 0 -60 1
+	}
+	trigger min_11
+	{
+		faceangles 0 0 -66 1
+	}
+	trigger min_12
+	{
+		faceangles 0 0 -72 1
+	}
+	trigger min_13
+	{
+		faceangles 0 0 -78 1
+	}
+	trigger min_14
+	{
+		faceangles 0 0 -84 1
+	}
+	trigger min_15
+	{
+		faceangles 0 0 -90 1
+		trigger stopwatch_hours quarter_15
+		trigger stopwatch_hours wijzer
+	}
+	trigger min_16
+	{
+		faceangles 0 0 -96 1
+	}
+	trigger min_17
+	{
+		faceangles 0 0 -102 1
+	}
+	trigger min_18
+	{
+		faceangles 0 0 -108 1
+	}
+	trigger min_19
+	{
+		faceangles 0 0 -114 1
+	}
+	trigger min_20
+	{
+		faceangles 0 0 -120 1
+	}
+	trigger min_21
+	{
+		faceangles 0 0 -126 1
+	}
+	trigger min_22
+	{
+		faceangles 0 0 -132 1
+	}
+	trigger min_23
+	{
+		faceangles 0 0 -138 1
+	}
+	trigger min_24
+	{
+		faceangles 0 0 -144 1
+	}
+	trigger min_25
+	{
+		faceangles 0 0 -150 1
+	}
+	trigger min_26
+	{
+		faceangles 0 0 -156 1
+	}
+	trigger min_27
+	{
+		faceangles 0 0 -162 1
+	}
+	trigger min_28
+	{
+		faceangles 0 0 -168 1
+	}
+	trigger min_29
+	{
+		faceangles 0 0 -174 1
+	}
+	trigger min_30
+	{
+		faceangles 0 0 -180 1
+		trigger stopwatch_hours quarter_30
+		trigger stopwatch_hours wijzer
+	}
+	trigger min_31
+	{
+		faceangles 0 0 -186 1
+	}
+	trigger min_32
+	{
+		faceangles 0 0 -192 1
+	}
+	trigger min_33
+	{
+		faceangles 0 0 -198 1
+	}
+	trigger min_34
+	{
+		faceangles 0 0 -204 1
+	}
+	trigger min_35
+	{
+		faceangles 0 0 -210 1
+	}
+	trigger min_36
+	{
+		faceangles 0 0 -216 1
+	}
+	trigger min_37
+	{
+		faceangles 0 0 -222 1
+	}
+	trigger min_38
+	{
+		faceangles 0 0 -228 1
+	}
+	trigger min_39
+	{
+		faceangles 0 0 -234 1
+	}
+	trigger min_40
+	{
+		faceangles 0 0 -240 1
+	}
+	trigger min_41
+	{
+		faceangles 0 0 -246 1
+	}
+	trigger min_42
+	{
+		faceangles 0 0 -252 1
+	}
+	trigger min_43
+	{
+		faceangles 0 0 -258 1
+	}
+	trigger min_44
+	{
+		faceangles 0 0 -264 1
+	}
+	trigger min_45
+	{
+		faceangles 0 0 -270 1
+		trigger stopwatch_hours quarter_45
+		trigger stopwatch_hours wijzer
+	}
+	trigger min_46
+	{
+		faceangles 0 0 -276 1
+	}
+	trigger min_47
+	{
+		faceangles 0 0 -282 1
+	}
+	trigger min_48
+	{
+		faceangles 0 0 -288 1
+	}
+	trigger min_49
+	{
+		faceangles 0 0 -294 1
+	}
+	trigger min_50
+	{
+		faceangles 0 0 -300 1
+	}
+	trigger min_51
+	{
+		faceangles 0 0 -306 1
+	}
+	trigger min_52
+	{
+		faceangles 0 0 -312 1
+	}
+	trigger min_53
+	{
+		faceangles 0 0 -318 1
+	}
+	trigger min_54
+	{
+		faceangles 0 0 -324 1
+	}
+	trigger min_55
+	{
+		faceangles 0 0 -330 1
+	}
+	trigger min_56
+	{
+		faceangles 0 0 -336 1
+	}
+	trigger min_57
+	{
+		faceangles 0 0 -342 1
+	}
+	trigger min_58
+	{
+		faceangles 0 0 -348 1
+	}
+	trigger min_59
+	{
+		faceangles 0 0 -354 1
+	}
+}
+
+// accum 3 = uren
+// accum 4 = kwartieren
+stopwatch_hours
+{
+	spawn
+	{
+		accum 3 set 0
+		accum 4 set 0
+		trigger self hour_0
+	}
+	trigger reset
+	{
+		// klok op 00:00
+		accum 3 set 0
+		accum 4 set 0
+		trigger self wijzer
+	}
+	trigger reset_8
+	{
+		// klok op 20:00
+		accum 3 set 8
+		accum 4 set 0
+		trigger self wijzer
+	}
+
+	trigger increase
+	{
+		accum 3 inc 1
+		accum 3 abort_if_less_than 12
+		accum 3 set 0				// uren op 0
+		trigger self wijzer
+	}
+
+	trigger quarter_0
+	{
+		accum 4 set 0
+	}
+	trigger quarter_15
+	{
+		accum 4 set 15
+	}
+	trigger quarter_30
+	{
+		accum 4 set 30
+	}
+	trigger quarter_45
+	{
+		accum 4 set 45
+	}
+
+	trigger wijzer
+	{
+		// de uren wijzer
+		accum 3 trigger_if_equal 0 stopwatch_hours hour_0
+		accum 3 trigger_if_equal 1 stopwatch_hours hour_1
+		accum 3 trigger_if_equal 2 stopwatch_hours hour_2
+		accum 3 trigger_if_equal 3 stopwatch_hours hour_3
+		accum 3 trigger_if_equal 4 stopwatch_hours hour_4
+		accum 3 trigger_if_equal 5 stopwatch_hours hour_5
+		accum 3 trigger_if_equal 6 stopwatch_hours hour_6
+		accum 3 trigger_if_equal 7 stopwatch_hours hour_7
+		accum 3 trigger_if_equal 8 stopwatch_hours hour_8
+		accum 3 trigger_if_equal 9 stopwatch_hours hour_9
+		accum 3 trigger_if_equal 10 stopwatch_hours hour_10
+		accum 3 trigger_if_equal 11 stopwatch_hours hour_11
+	}
+
+	//de uren wijzer
+	trigger hour_0
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_0_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_0_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_0_45
+		faceangles 0 0 0 1
+	}
+	trigger hour_0_15
+	{
+		faceangles 0 0 352 1
+		resetscript
+	}
+	trigger hour_0_30
+	{
+		faceangles 0 0 345 1
+		resetscript
+	}
+	trigger hour_0_45
+	{
+		faceangles 0 0 337 1
+		resetscript
+	}
+	trigger hour_1
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_1_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_1_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_1_45
+		faceangles 0 0 330 1
+	}
+	trigger hour_1_15
+	{
+		faceangles 0 0 322 1
+		resetscript
+	}
+	trigger hour_1_30
+	{
+		faceangles 0 0 315 1
+		resetscript
+	}
+	trigger hour_1_45
+	{
+		faceangles 0 0 307 1
+		resetscript
+	}
+	trigger hour_2
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_2_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_2_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_2_45
+		faceangles 0 0 300 1
+	}
+	trigger hour_2_15
+	{
+		faceangles 0 0 292 1
+		resetscript
+	}
+	trigger hour_2_30
+	{
+		faceangles 0 0 285 1
+		resetscript
+	}
+	trigger hour_2_45
+	{
+		faceangles 0 0 277 1
+		resetscript
+	}
+	trigger hour_3
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_3_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_3_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_3_45
+		faceangles 0 0 270 1
+	}
+	trigger hour_3_15
+	{
+		faceangles 0 0 262 1
+		resetscript
+	}
+	trigger hour_3_30
+	{
+		faceangles 0 0 255 1
+		resetscript
+	}
+	trigger hour_3_45
+	{
+		faceangles 0 0 247 1
+		resetscript
+	}
+	trigger hour_4
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_4_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_4_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_4_45
+		faceangles 0 0 240 1
+	}
+	trigger hour_4_15
+	{
+		faceangles 0 0 232 1
+		resetscript
+	}
+	trigger hour_4_30
+	{
+		faceangles 0 0 225 1
+		resetscript
+	}
+	trigger hour_4_45
+	{
+		faceangles 0 0 217 1
+		resetscript
+	}
+	trigger hour_5
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_5_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_5_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_5_45
+		faceangles 0 0 210 1
+	}
+	trigger hour_5_15
+	{
+		faceangles 0 0 202 1
+		resetscript
+	}
+	trigger hour_5_30
+	{
+		faceangles 0 0 195 1
+		resetscript
+	}
+	trigger hour_5_45
+	{
+		faceangles 0 0 187 1
+		resetscript
+	}
+	trigger hour_6
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_6_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_6_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_6_45
+		faceangles 0 0 180 1
+	}
+	trigger hour_6_15
+	{
+		faceangles 0 0 172 1
+		resetscript
+	}
+	trigger hour_6_30
+	{
+		faceangles 0 0 165 1
+		resetscript
+	}
+	trigger hour_6_45
+	{
+		faceangles 0 0 157 1
+		resetscript
+	}
+	trigger hour_7
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_7_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_7_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_7_45
+		faceangles 0 0 150 1
+	}
+	trigger hour_7_15
+	{
+		faceangles 0 0 142 1
+		resetscript
+	}
+	trigger hour_7_30
+	{
+		faceangles 0 0 135 1
+		resetscript
+	}
+	trigger hour_7_45
+	{
+		faceangles 0 0 127 1
+		resetscript
+	}
+	trigger hour_8
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_8_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_8_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_8_45
+		faceangles 0 0 120 1
+	}
+	trigger hour_8_15
+	{
+		faceangles 0 0 112 1
+		resetscript
+	}
+	trigger hour_8_30
+	{
+		faceangles 0 0 105 1
+		resetscript
+	}
+	trigger hour_8_45
+	{
+		faceangles 0 0 97 1
+		resetscript
+	}
+	trigger hour_9
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_9_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_9_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_9_45
+		faceangles 0 0 90 1
+	}
+	trigger hour_9_15
+	{
+		faceangles 0 0 82 1
+		resetscript
+	}
+	trigger hour_9_30
+	{
+		faceangles 0 0 75 1
+		resetscript
+	}
+	trigger hour_9_45
+	{
+		faceangles 0 0 67 1
+		resetscript
+	}
+	trigger hour_10
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_10_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_10_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_10_45
+		faceangles 0 0 60 1
+	}
+	trigger hour_10_15
+	{
+		faceangles 0 0 52 1
+		resetscript
+	}
+	trigger hour_10_30
+	{
+		faceangles 0 0 45 1
+		resetscript
+	}
+	trigger hour_10_45
+	{
+		faceangles 0 0 37 1
+		resetscript
+	}
+	trigger hour_11
+	{
+		accum 4 trigger_if_equal 15 stopwatch_hours hour_11_15
+		accum 4 trigger_if_equal 30 stopwatch_hours hour_11_30
+		accum 4 trigger_if_equal 45 stopwatch_hours hour_11_45
+		faceangles 0 0 30 1
+	}
+	trigger hour_11_15
+	{
+		faceangles 0 0 22 1
+		resetscript
+	}
+	trigger hour_11_30
+	{
+		faceangles 0 0 15 1
+		resetscript
+	}
+	trigger hour_11_45
+	{
+		faceangles 0 0 7 1
+		resetscript
+	}
+}
+
+
+//=============================================================================
+//=== Switch
+//=============================================================================
+switch_strobe
+{
+	spawn
+	{
+		accum 0 set 0	// status aan/uit
+	}
+	trigger toggle
+	{
+		//wm_announce "The switch is toggled"
+
+		accum 1 set 0	// temp register
+		trigger self check_turnoff
+		accum 1 abort_if_equal 1
+		trigger self check_turnon
+	}
+	trigger check_turnoff
+	{
+		accum 0 abort_if_equal 0
+		trigger self off
+		accum 0 set 0	// status aan/uit
+		accum 1 set 1
+	}
+	trigger check_turnon
+	{
+		accum 0 abort_if_equal 1
+		trigger self on
+		accum 0 set 1	// status aan/uit
+	}
+
+	trigger on
+	{
+
+	}
+	trigger off
+	{
+	}
+}
+
+
+//----------------------------------------------------------------------------------------------------
+//--- The Goldrush NEUTRAL COMMAND POST.. I just copied it
+//----------------------------------------------------------------------------------------------------
+big_flag
+{
+	spawn
+	{
+		wait 400
+		// de grote vlag verbergen
+		trigger self make_neutral
+	}
+
+	trigger make_blue
+	{
+		remapshader "textures/UJE_00/uje_blue_flag" "textures/UJE_00/uje_blue_flag"
+		remapshaderflush
+
+		setstate big_flag default
+	}
+	trigger make_red
+	{
+		remapshader "textures/UJE_00/uje_blue_flag" "textures/UJE_00/uje_red_flag"
+		remapshaderflush
+
+		setstate big_flag default
+	}
+	trigger make_neutral
+	{
+		setstate big_flag invisible
+	}
+}
+
+allied_compost_built
+{
+	spawn
+	{
+		wait 400
+		trigger allied_compost_built setup
+
+		constructible_class 2
+	}
+
+	trigger setup
+	{
+		setchargetimefactor 1 soldier 1
+		setchargetimefactor 1 lieutenant 1
+		setchargetimefactor 1 medic 1
+		setchargetimefactor 1 engineer 1
+		setchargetimefactor 1 covertops 1
+		sethqstatus 1 0
+	}
+
+	buildstart final
+	{
+		setstate allied_compost_built_model underconstruction
+		setstate neutral_compost_closed_clip invisible
+		setstate neutral_compost_closed_model invisible
+	}
+
+	built final
+	{
+		setstate allied_compost_built_model default
+		setstate neutral_compost_closed_clip invisible
+		setstate neutral_compost_closed_model invisible
+
+		trigger allied_compost_built_model enable_allied_features
+
+		enablespeaker allies_compost_sound
+
+		// de grote vlag bijwerken
+		trigger big_flag make_blue
+	}
+
+	decayed final
+	{
+		setstate allied_compost_built_model invisible
+		setstate neutral_compost_closed_clip default
+		setstate neutral_compost_closed_model default
+	}
+
+	death
+	{
+		setstate allied_compost_built_model invisible
+		setstate neutral_compost_closed_clip default
+		setstate neutral_compost_closed_model default
+
+		trigger allied_compost_built_model disable_allied_features
+
+		disablespeaker allies_compost_sound
+
+		// de grote vlag bijwerken
+		trigger big_flag make_neutral
+	}
+}
+
+allied_compost_built_model
+{
+	spawn
+	{
+		wait 400
+		setstate allied_compost_built_model invisible
+	}
+
+	trigger enable_allied_features
+	{
+		setchargetimefactor 1 soldier 0.75
+		setchargetimefactor 1 lieutenant 0.75
+		setchargetimefactor 1 medic 0.75
+		setchargetimefactor 1 engineer 0.75
+		setchargetimefactor 1 covertops 0.75
+		sethqstatus 1 1
+
+		wm_allied_respawntime 10
+
+		wm_announce "Allied Command Post constructed"
+
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 0 "uje_they_have_constructed_cp2"
+		wm_teamvoiceannounce 1 "uje_cp_constructed"
+//
+//		wm_removeteamvoiceannounce 1 "allies_hq_compost_construct"
+//		// *---------------------------------------------------------------------------------*
+
+		wm_objective_status 3 0 2	//axis failed
+		wm_objective_status 3 1 1	//allies completed
+	}
+
+	trigger disable_allied_features
+	{
+		setchargetimefactor 1 soldier 1
+		setchargetimefactor 1 lieutenant 1
+		setchargetimefactor 1 medic 1
+		setchargetimefactor 1 engineer 1
+		setchargetimefactor 1 covertops 1
+		sethqstatus 1 0
+
+		wm_allied_respawntime 15
+
+		wm_announce	"Axis team has destroyed the Allied Command Post"
+
+		// *----------------------------------- vo ------------------------------------------*
+		wm_addteamvoiceannounce 0 "uje_construct_cp"
+		wm_addteamvoiceannounce 1 "uje_they_have_destroyed_cp"
+//
+//		wm_teamvoiceannounce 0 "axis_hq_compost_construct"
+//
+//		wm_teamvoiceannounce 1 "allies_hq_compost_damaged"
+//		// *---------------------------------------------------------------------------------*
+
+		wm_objective_status 3 0 0	//axis neutral
+		wm_objective_status 3 1 0	//allies neutral
+	}
+}
+
+axis_compost_built
+{
+	spawn
+	{
+		wait 400
+		trigger axis_compost_built setup
+
+		constructible_class 2
+	}
+
+	trigger setup
+	{
+		setchargetimefactor 0 soldier 1
+		setchargetimefactor 0 lieutenant 1
+		setchargetimefactor 0 medic 1
+		setchargetimefactor 0 engineer 1
+		setchargetimefactor 0 covertops 1
+		sethqstatus 0 0
+	}
+
+	buildstart final
+	{
+		setstate axis_compost_built_model underconstruction
+		setstate neutral_compost_closed_clip invisible
+		setstate neutral_compost_closed_model invisible
+	}
+
+	built final
+	{
+		setstate axis_compost_built_model default
+		setstate neutral_compost_closed_clip invisible
+		setstate neutral_compost_closed_model invisible
+
+		trigger axis_compost_built_model enable_axis_features
+
+		enablespeaker axis_compost_sound
+
+		// de grote vlag bijwerken
+		trigger big_flag make_red
+	}
+
+	decayed final
+	{
+		setstate axis_compost_built_model invisible
+		setstate neutral_compost_closed_clip default
+		setstate neutral_compost_closed_model default
+	}
+
+	death
+	{
+		setstate axis_compost_built_model invisible
+		setstate neutral_compost_closed_clip default
+		setstate neutral_compost_closed_model default
+
+		trigger axis_compost_built_model disable_axis_features
+
+		disablespeaker axis_compost_sound
+
+		// de grote vlag bijwerken
+		trigger big_flag make_neutral
+	}
+}
+
+axis_compost_built_model
+{
+	spawn
+	{
+		wait 400
+		setstate axis_compost_built_model invisible
+	}
+
+	trigger enable_axis_features
+	{
+		setchargetimefactor 0 soldier 0.75
+		setchargetimefactor 0 lieutenant 0.75
+		setchargetimefactor 0 medic 0.75
+		setchargetimefactor 0 engineer 0.75
+		setchargetimefactor 0 covertops 0.75
+		sethqstatus 0 1
+
+		wm_axis_respawntime 15
+
+		wm_announce	"Axis Command Post constructed"
+
+		// *----------------------------------- vo ------------------------------------------*
+		wm_teamvoiceannounce 0 "uje_cp_constructed"
+		wm_teamvoiceannounce 1 "uje_they_have_constructed_cp2"
+//
+//		wm_removeteamvoiceannounce 0 "axis_hq_compost_construct"
+//		// *---------------------------------------------------------------------------------*
+
+		wm_objective_status 3 0 1	//axis completed
+		wm_objective_status 3 1 2	//allies failed
+	}
+
+	trigger disable_axis_features
+	{
+		setchargetimefactor 0 soldier 1
+		setchargetimefactor 0 lieutenant 1
+		setchargetimefactor 0 medic 1
+		setchargetimefactor 0 engineer 1
+		setchargetimefactor 0 covertops 1
+		sethqstatus 0 0
+
+		wm_axis_respawntime 20
+
+		wm_announce	"Allied team has destroyed the Axis Command Post"
+
+		// *----------------------------------- vo ------------------------------------------*
+		wm_addteamvoiceannounce 0 "uje_they_have_destroyed_cp"
+		wm_addteamvoiceannounce 1 "uje_construct_cp"
+//
+//		wm_teamvoiceannounce 0 "axis_hq_compost_damaged"
+//
+//		wm_teamvoiceannounce 1 "allies_hq_compost_construct"
+//		// *---------------------------------------------------------------------------------*
+
+		wm_objective_status 3 0 0	//axis neutral
+		wm_objective_status 3 1 0	//allies neutral
+	}
+}
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------
